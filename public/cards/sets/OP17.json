@@ -15,8 +15,8 @@
   "rarity": "Leader",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Edward.Newgate",
@@ -92,8 +92,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Atmos",
@@ -160,8 +160,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Izo",
@@ -231,8 +231,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Inuarashi & Nekomamushi",
@@ -303,8 +303,8 @@
   ],
   "rarity": "Super Rare",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Edward.Newgate",
@@ -388,8 +388,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Kingdew",
@@ -464,8 +464,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Kouzuki Oden",
@@ -536,8 +536,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Jozu",
@@ -605,8 +605,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Haruta",
@@ -674,8 +674,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Fossa",
@@ -743,8 +743,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Blamenco",
@@ -813,8 +813,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Blenheim",
@@ -883,8 +883,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Portgas.D.Ace",
@@ -953,8 +953,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Whitey Bay",
@@ -1023,8 +1023,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Marco",
@@ -1093,8 +1093,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Rakuyo",
@@ -1158,8 +1158,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Ga Ha Ha Ha!!",
@@ -1220,8 +1220,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "The Power to Destroy the World",
@@ -1282,8 +1282,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "I Don't Have Time to Chat with Snot-Nosed Brats",
@@ -1348,8 +1348,8 @@
   "rarity": "Leader",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Shanks",
@@ -1426,8 +1426,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Crone Oli",
@@ -1494,8 +1494,8 @@
   ],
   "rarity": "Super Rare",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Shanks",
@@ -1579,8 +1579,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Nami",
@@ -1651,8 +1651,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Howling Gab",
@@ -1721,8 +1721,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Building Snake",
@@ -1798,8 +1798,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Fugar",
@@ -1867,8 +1867,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Benn.Beckman",
@@ -1943,8 +1943,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Bonk Punch & Monster",
@@ -2015,8 +2015,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Hongo",
@@ -2085,8 +2085,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Monkey.D.Luffy",
@@ -2157,8 +2157,8 @@
   "rarity": "Super Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Yasopp",
@@ -2234,8 +2234,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Limejuice",
@@ -2304,8 +2304,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Lucky.Roux",
@@ -2374,8 +2374,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Rockstar",
@@ -2444,8 +2444,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Roronoa Zoro",
@@ -2511,8 +2511,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Withdraw Now and Allow Me to Save Face",
@@ -2573,8 +2573,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Are You That Afraid of the New Era?!!",
@@ -2642,8 +2642,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "I Think He's Seen an Ugly Future...",
@@ -2706,8 +2706,8 @@
   "rarity": "Leader",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Rocks.D.Xebec",
@@ -2781,8 +2781,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Edward.Newgate",
@@ -2856,8 +2856,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Wang Zhi",
@@ -2924,8 +2924,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Kaido",
@@ -2992,8 +2992,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Ganzui",
@@ -3060,8 +3060,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Captain John",
@@ -3128,8 +3128,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Kyo",
@@ -3203,8 +3203,8 @@
   "rarity": "Super Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Gloriosa",
@@ -3280,8 +3280,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Shiki",
@@ -3352,8 +3352,8 @@
   "rarity": "Super Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Shiki",
@@ -3427,8 +3427,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Charlotte Linlin",
@@ -3502,8 +3502,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Streusen",
@@ -3571,8 +3571,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Jinbe",
@@ -3644,8 +3644,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Don Marlon",
@@ -3712,8 +3712,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Barbell",
@@ -3782,8 +3782,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Miss Buckingham Stussy",
@@ -3853,8 +3853,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "There's No Authority in the World That Lasts Forever!!!",
@@ -3913,8 +3913,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Rocks Pirates",
@@ -3973,8 +3973,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Fullalead",
@@ -4037,8 +4037,8 @@
   "rarity": "Leader",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Kaido",
@@ -4114,8 +4114,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Aramaki",
@@ -4185,8 +4185,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Ulti & Page One",
@@ -4255,8 +4255,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Lead Performers",
@@ -4332,8 +4332,8 @@
   ],
   "rarity": "Super Rare",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Kaido",
@@ -4416,8 +4416,8 @@
   "rarity": "Super Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Kaido",
@@ -4493,8 +4493,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "King",
@@ -4563,8 +4563,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Queen",
@@ -4632,8 +4632,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Kurozumi Orochi",
@@ -4704,8 +4704,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Kurozumi Kanjuro",
@@ -4776,8 +4776,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Sasaki",
@@ -4845,8 +4845,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Jack",
@@ -4916,8 +4916,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Scratchmen Apoo",
@@ -4995,8 +4995,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Who's.Who",
@@ -5067,8 +5067,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Black Maria",
@@ -5137,8 +5137,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Basil Hawkins",
@@ -5209,8 +5209,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Yamato",
@@ -5279,8 +5279,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "X.Drake",
@@ -5348,8 +5348,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Wo Ro Ro Ro Ro... I Think I've Sobered Up",
@@ -5410,8 +5410,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Kundali Dragon Swarm",
@@ -5472,8 +5472,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Drunken Dragon Bagua",
@@ -5538,8 +5538,8 @@
   "rarity": "Leader",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Monkey.D.Luffy",
@@ -5625,8 +5625,8 @@
   "rarity": "Super Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Usopp",
@@ -5704,8 +5704,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Gerd",
@@ -5778,8 +5778,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Sanji",
@@ -5850,8 +5850,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Jinbe",
@@ -5924,8 +5924,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Tony Tony.Chopper",
@@ -5998,8 +5998,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Dorry",
@@ -6072,8 +6072,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Nami",
@@ -6144,8 +6144,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Nico Robin",
@@ -6223,8 +6223,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Hajrudin",
@@ -6303,8 +6303,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Jaguar.D.Saul",
@@ -6376,8 +6376,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Franky",
@@ -6448,8 +6448,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Brook",
@@ -6520,8 +6520,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Brogy",
@@ -6593,8 +6593,8 @@
   "rarity": "Super Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Monkey.D.Luffy",
@@ -6673,8 +6673,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Rodo",
@@ -6747,8 +6747,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Roronoa Zoro",
@@ -6814,8 +6814,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "I'm Luffy!! The Man Who Will Be King of the Pirates!!",
@@ -6878,8 +6878,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "I'll Feed on This Rage and Use It to Bring the World to Ruin!!!",
@@ -6940,8 +6940,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Gum-Gum Kong Gun",
@@ -7008,8 +7008,8 @@
   "rarity": "Leader",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Charlotte Linlin",
@@ -7086,8 +7086,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Capone\"Gang\"Bege",
@@ -7158,8 +7158,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Caribou",
@@ -7230,8 +7230,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Charlotte Oven",
@@ -7300,8 +7300,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Charlotte Katakuri",
@@ -7370,8 +7370,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Charlotte Cracker",
@@ -7440,8 +7440,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Charlotte Chiffon",
@@ -7512,8 +7512,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Charlotte Smoothie",
@@ -7582,8 +7582,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Charlotte Daifuku",
@@ -7659,8 +7659,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Charlotte Brulee",
@@ -7729,8 +7729,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Charlotte Pudding",
@@ -7799,8 +7799,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Charlotte Perospero",
@@ -7869,8 +7869,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Charlotte Mont-d'or",
@@ -7937,8 +7937,8 @@
   ],
   "rarity": "Super Rare",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Charlotte Linlin",
@@ -8022,8 +8022,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Streusen",
@@ -8093,8 +8093,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Sweet 3 Generals",
@@ -8166,8 +8166,8 @@
   "rarity": "Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Don't you know that even in the cruel world of pirates there's still a code of honor?!!",
@@ -8228,8 +8228,8 @@
   "rarity": "Uncommon",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Fulgora",
@@ -8290,8 +8290,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Maser Saber",
@@ -8355,8 +8355,8 @@
   ],
   "rarity": "Secret Rare",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Rocks.D.Xebec",
@@ -8437,8 +8437,8 @@
   "rarity": "Secret Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Loki",

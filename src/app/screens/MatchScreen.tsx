@@ -45,7 +45,6 @@ import {
   MatchChatPanel,
   PendingChoicePrompt,
   PhaseIndicator,
-  OnlineRpsToss,
   PlayerBoardPanel,
   PreGameDecider,
   type PreGameDecision,
@@ -553,12 +552,11 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       <MatchGameShell title="Match">
         {current.screen === 'online-match' ? (
           <>
-            {/* The room runs its toss between "both seats ready" and
-                "match started", so this is the window it renders in. It
-                returns null when no round is open, leaving the plain
-                connecting screen underneath. */}
+            {/* The room's pre-game toss is NOT rendered here: it opens
+                while both clients are still on the lobby/ranked screen, so
+                it lives at the App root (see App.tsx). This screen only ever
+                shows the connecting state underneath it. */}
             <OnlineSyncLoading onCancel={handleQuit} />
-            <OnlineRpsToss />
           </>
         ) : (
           <p className="p-6 text-sm text-white/50">Starting match...</p>

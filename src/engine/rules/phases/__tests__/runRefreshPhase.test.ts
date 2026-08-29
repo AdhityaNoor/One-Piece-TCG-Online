@@ -61,9 +61,11 @@ describe('runRefreshPhase', () => {
     expect(result.state.cardsById[oppCharId].orientation).toBe('rested');
     expect(result.state.cardsById[oppCharId].summoningSick).toBe(true);
 
-    // Global oncePerTurnUsage: only the active player's controlled-card entry is cleared.
+    // Global oncePerTurnUsage: cleared for EVERY card on the field, both players'.
+    // [Once Per Turn] is a per-TURN budget and the opponent's cards act during this
+    // turn too (blockers, [Counter], [On Your Opponent's Attack]).
     expect(result.state.oncePerTurnUsage[`${charId}:eff1`]).toBeUndefined();
-    expect(result.state.oncePerTurnUsage[`${oppCharId}:eff2`]).toBe(true);
+    expect(result.state.oncePerTurnUsage[`${oppCharId}:eff2`]).toBeUndefined();
 
     expect(result.state.currentPhase).toBe('draw');
     expect(result.log).toHaveLength(1);
@@ -110,7 +112,13 @@ describe('deferred coverage: reveal + refresh riders', () => {
     const fired = runTimings(registry['OP13-024'], ['onPlay'], withDon.rig.state, sourceId, withDon.rig.defs, null, registry);
     const choice = fired.state.pendingChoices[0];
     expect(choice).toBeDefined();
-    const resolved = resumeProgram(registry['OP13-024'], fired.state, choice!, [musicId], withDon.rig.defs, null, registry);
+    const revealed = resumeProgram(registry['OP13-024'], fired.state, choice!, [musicId], withDon.rig.defs, null, registry);
+
+    // "Set up to 2 of your DON!! cards as active at the end of this turn" asks HOW MANY
+    // (options: None / 1 / 2) — pick 2 (option index 2).
+    const countChoice = revealed.state.pendingChoices[0];
+    expect(countChoice?.kind).toBe('SELECT_OPTION');
+    const resolved = resumeProgram(registry['OP13-024'], revealed.state, countChoice!, 2, withDon.rig.defs, null, registry);
     expect(resolved.state.delayedEffects?.some((e) => e.kind === 'setActiveControllerDonAtEndOfTurn')).toBe(true);
 
     const ended = runEndPhaseAndHandoff({ ...resolved.state, currentPhase: 'end' }, withDon.rig.defs, registry).state;

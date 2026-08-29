@@ -8,6 +8,13 @@ import type { CardEffectAssignment } from '../assembler';
 export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP13-001 — rest any number of active DON!!; +2000 battle power per rested DON!!.
+  //
+  //   `captureCount` is REQUIRED between the rest and the buff: `restControllerDon` binds the
+  //   rested DON!! into `t`, but the buff's own target selection is another `chooseTargets` that
+  //   REBINDS `t` to the chosen recipient — so an `amountPer` reading the default `t` would scale
+  //   by 1 (a flat +2000) no matter how many DON!! were rested. Snapshot the rest count into its
+  //   own var first and point `countVar` at it. copyVar leaves __lastSelected intact, so the
+  //   buff's `ifPrevious: 'previousSelectedAny'` still reads the rest step.
   {
     cardNumber: 'OP13-001',
     templateId: 'ability',
@@ -17,11 +24,13 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
       gate: [{ kind: 'selfActiveDonCount', atMost: 5 }],
       functions: [
         { fn: 'restControllerDon', maxTargets: -1, optional: true },
+        { fn: 'captureCount', into: 'op13RestedDon' },
         {
           fn: 'addPower',
           target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Straw Hat Crew' } },
           amount: 0,
           amountPer: 2000,
+          countVar: 'op13RestedDon',
           duration: 'duringThisBattle',
           optional: true,
           ifPrevious: 'previousSelectedAny',

@@ -74,7 +74,10 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-014 — trash any number of {FILM} from hand; +1000 battle power per card trashed.
   { cardNumber: 'OP06-014', templateId: 'ability', params: { timing: 'onOpponentsAttack', functions: [
     { fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'FILM' }, optional: true, anyNumber: true },
-    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 0, amountPer: 1000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' },
+    // captureCount is required: the buff's own chooseTargets rebinds `t` to the recipient, so a
+    // default-`t` amountPer would scale by 1 (flat +1000) instead of by the number trashed.
+    { fn: 'captureCount', into: 'op06TrashedFilm' },
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 0, amountPer: 1000, countVar: 'op06TrashedFilm', duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' },
   ] } },
   // OP06-015 — [Activate: Main] [Once Per Turn] trash 1 Character with 6000+ current power: play {FILM} cost 2–5 from trash rested.
   { cardNumber: 'OP06-015', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [

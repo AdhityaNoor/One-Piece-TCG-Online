@@ -21,7 +21,7 @@ import type { ActionExecuteResult } from '../../actions/actionExecuteResult';
 import { createActionLogger } from '../shared/actionLogger';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
-import { hasContinuousKeyword, cannotAttack, isAttackTargetForbidden, getForcedAttackTargetId, getAttackTrashTax } from '../shared/power';
+import { hasContinuousKeyword, cannotAttack, cannotRestSelf, isAttackTargetForbidden, getForcedAttackTargetId, getAttackTrashTax } from '../shared/power';
 import { fireWhenAttacking, fireRestTransitions, fireControllerLeaderBattleTriggers, type EffectTemplateRegistry } from '../../effects';
 import { hasAnyLegalBlocker } from './activateBlocker';
 import { hasAnyUsableOnOpponentsAttack } from './activateOnOpponentsAttack';
@@ -58,6 +58,10 @@ export function validateDeclareAttack(state: GameState, action: DeclareAttackAct
     }
   } else if (cannotAttack(state, action.attackerInstanceId, defs)) {
     reasons.push(`'${action.attackerInstanceId}' cannot attack — a card effect is preventing it from attacking.`);
+  } else if (cannotRestSelf(state, action.attackerInstanceId, defs)) {
+    // Declaring an attack RESTS the attacker (7-1-1-1), so "this card cannot be rested" stops the
+    // attack itself — not just effects that would rest it.
+    reasons.push(`'${action.attackerInstanceId}' cannot attack — a card effect is preventing it from being rested (7-1-1-1).`);
   } else {
     const forcedTarget = getForcedAttackTargetId(state, action.attackerInstanceId, defs);
     if (forcedTarget && action.targetInstanceId !== forcedTarget) {

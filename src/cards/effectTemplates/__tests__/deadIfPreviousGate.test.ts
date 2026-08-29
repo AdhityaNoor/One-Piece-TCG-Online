@@ -6,8 +6,10 @@
  * `previousMovedAny` reads the `__lastMoved` binding, which the interpreter
  * rewrites after EVERY op from that op's `movedIds`. A large family of ops
  * returns `movedIds: []` unconditionally — `rest`, `addKeyword`, `dealDamage`,
- * `copyVar`, and any op with no interpreter case (`shuffleDeck`). Gating the
- * next step on one of those means the step can never run.
+ * and any op with no interpreter case (`shuffleDeck`). Gating the next step on
+ * one of those means the step can never run. `copyVar` / `bindMatchingCards`
+ * are the opposite case: they leave the binding untouched on purpose, so a gate
+ * behind one still reads the action before it (see TRANSPARENT_TO_IF_PREVIOUS).
  *
  * ST06-012 is the sharpest instance: "You may trash 1 card from your hand and
  * rest this Character: K.O. up to 1 of your opponent's Characters with a cost of
@@ -32,9 +34,28 @@ import { ST06_ASSIGNMENTS } from '../assignments/ST06';
  */
 const NEVER_REPORTS_MOVED = [
   'rest', 'restAllCharacters', 'addKeyword', 'addCounterAura', 'dealDamage',
-  'copyVar', 'shuffleDeck', 'negateEffect', 'preventAttack', 'preventRefresh',
+  'shuffleDeck', 'negateEffect', 'preventAttack', 'preventRefresh',
   'preventRest', 'preventBlockers', 'setBasePower', 'addCost',
 ];
+
+/**
+ * TRANSPARENT ops are pure bookkeeping: they `continue` WITHOUT rewriting
+ * __lastMoved / __lastSelected (interpreter.ts, `copyVar` and
+ * `bindMatchingCards`), precisely so a following `ifPrevious` still reads the
+ * real prior action. They are neither moving nor non-moving — look straight
+ * through them to the op before. This is the `captureCount` pattern:
+ *   trash any number from hand -> captureCount -> addPower ifPrevious:previousMovedAny
+ */
+const TRANSPARENT_TO_IF_PREVIOUS = ['copyVar', 'bindMatchingCards'];
+
+/** The op an `ifPrevious` at index `i` actually reads, skipping bookkeeping ops. */
+function precedingActionOp(ops: Array<Record<string, unknown>>, i: number): { op: string } | undefined {
+  for (let j = i - 1; j >= 0; j -= 1) {
+    const candidate = ops[j] as { op: string };
+    if (!TRANSPARENT_TO_IF_PREVIOUS.includes(candidate.op)) return candidate;
+  }
+  return undefined;
+}
 
 const registry = buildRegistryFromAssignments(
   ST06_ASSIGNMENTS.filter((a) => a.cardNumber === 'ST06-012'),
@@ -87,8 +108,8 @@ describe('catalog guard: no ifPrevious gate sits behind a non-moving op', () => 
     const walk = (cardNumber: string, timing: string, ops: Array<Record<string, unknown>>): void => {
       ops.forEach((op, i) => {
         if (op.ifPrevious === 'previousMovedAny' && i > 0) {
-          const prev = ops[i - 1] as { op: string };
-          if (NEVER_REPORTS_MOVED.includes(prev.op)) {
+          const prev = precedingActionOp(ops, i);
+          if (prev && NEVER_REPORTS_MOVED.includes(prev.op)) {
             dead.push(`${cardNumber} [${timing}] op${i} '${String(op.op)}' gated on non-moving '${prev.op}'`);
           }
         }

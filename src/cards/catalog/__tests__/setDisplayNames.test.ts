@@ -8,6 +8,13 @@ describe('setDisplayNames', () => {
     expect(resolveSetDisplayName('EB04')).toBe('Egghead Crisis');
   });
 
+  it('names the ST31-ST36 starter decks (catalog shipped them as bare codes)', () => {
+    expect(resolveSetDisplayName('ST31')).toBe('RED Monkey.D.Luffy');
+    expect(resolveSetDisplayName('ST33')).toBe('BLUE Kuzan');
+    expect(resolveSetDisplayName('ST35')).toBe('RED/BLACK Sabo');
+    expect(formatSetLibraryOptionLabel('ST36')).toBe('YELLOW Eustass"Captain"Kid (ST36)');
+  });
+
   it('falls back to the provided name or code when unknown', () => {
     expect(resolveSetDisplayName('ZZ99', 'Custom Name')).toBe('Custom Name');
     expect(resolveSetDisplayName('ZZ99')).toBe('ZZ99');

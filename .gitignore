@@ -90,3 +90,6 @@ graphify-out/
 .history/
 
 coverage.json
+# Python bytecode from the placeholder-SFX generator (scripts/audio/).
+__pycache__/
+*.pyc

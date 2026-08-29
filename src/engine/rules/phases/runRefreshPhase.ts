@@ -12,12 +12,21 @@
  *    in "the field"). This single sweep also covers DON!! that was resting
  *    purely from cost payment (2-7-2) as well as DON!! just returned by
  *    step 1 above (giving DON!! rests it — 6-5-5-1).
- * 3. Reset [Once Per Turn] usage (10-2-13-4) for cards the turn player
- *    controls. No card effect can populate these fields yet (effects are
- *    fully stubbed this milestone — ACTIVATE_CARD_EFFECT is rejected by the
- *    dispatcher), so this is forward-looking dead code today, kept here
- *    because it is cheap, obviously correct, and exactly where the rule
- *    says it belongs.
+ * 3. Reset [Once Per Turn] usage (10-2-13-4) for EVERY card on the field,
+ *    both players' — not just the turn player's. [Once Per Turn] is a
+ *    per-TURN usage limit (docs/OPTCG_Canonical_Effect_Structure.md section
+ *    17: `{ maximumUses: 1, period: PER_TURN }`), and a turn belongs to one
+ *    player while BOTH players' cards can act in it. Clearing only the turn
+ *    player's budget made every ability that fires on the opponent's turn
+ *    ([On Your Opponent's Attack], [Opponent's Turn], [End of Your
+ *    Opponent's Turn], "when your Leader is attacked") reset once per ROUND
+ *    instead of once per turn: spend it on your own turn and it was still
+ *    marked used when the opponent attacked, so the player was never asked
+ *    (OP17-040 Edward.Newgate was the reported case).
+ *
+ *    Only the usage budget is global here. Everything else in this phase
+ *    (set active, return given DON!!, clear summoning sickness) stays
+ *    turn-player-only per 6-2.
  *
  * FLAGGED ASSUMPTION (see card.ts CardInstance.donRested doc comment): the
  * precise split of "return given DON!!" vs. "set rested cards active" across
@@ -100,15 +109,23 @@ export function runRefreshPhase(state: GameState, defs: CardDefinitionLookup = {
     }
   }
 
-  const controlledIds = [player.leaderInstanceId, ...player.characterArea.cardIds, ...player.stageArea.cardIds];
-  for (const id of controlledIds) {
-    if (cardsById[id].oncePerTurnUsed.length > 0) {
+  // [Once Per Turn] is a PER-TURN budget, so a new turn refills it for BOTH
+  // players' cards — the opponent's cards act during this turn too (blockers,
+  // [Counter], [On Your Opponent's Attack], "when your Leader is attacked").
+  // See the step-3 note in this file's header.
+  const fieldIds = Object.values(state.players).flatMap((p) => [
+    p.leaderInstanceId,
+    ...p.characterArea.cardIds,
+    ...p.stageArea.cardIds,
+  ]);
+  for (const id of fieldIds) {
+    if (cardsById[id] !== undefined && cardsById[id].oncePerTurnUsed.length > 0) {
       cardsById[id] = { ...cardsById[id], oncePerTurnUsed: [] };
     }
   }
-  const controlledIdSet = new Set(controlledIds);
+  const fieldIdSet = new Set(fieldIds);
   const oncePerTurnUsage = Object.fromEntries(
-    Object.entries(state.oncePerTurnUsage).filter(([key]) => !controlledIdSet.has(key.split(':')[0])),
+    Object.entries(state.oncePerTurnUsage).filter(([key]) => !fieldIdSet.has(key.split(':')[0])),
   );
 
   logger.push({

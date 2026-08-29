@@ -796,15 +796,46 @@ function restSourceMatches(mod: ContinuousRestRestriction, state: GameState, pro
   return source.controllerId === protectedInst.ownerId;
 }
 
-/** Whether `instanceId` currently cannot be rested by the resolving card effect. */
-export function cannotBeRestedByEffect(state: GameState, instanceId: string, restSourceInstanceId?: string, defs: CardDefinitionLookup = {}): boolean {
-  return state.continuousEffects.some((record) => {
+/**
+ * The first continuous record currently stopping `instanceId` from being rested, or null.
+ *
+ * "This Character cannot be rested" is a restriction on the CARD BECOMING REST, not merely on
+ * effects that rest it: resting is the cost of declaring an attack (7-1-1-1), of activating
+ * [Blocker] (7-1-2-1) and of any "rest this Character:" activation cost (2-4-2), so a card that
+ * cannot be rested can do none of them. Callers:
+ *   - EffectContext.rest (an effect resting the card) passes `restSourceInstanceId`;
+ *   - DECLARE_ATTACK / ACTIVATE_BLOCKER / restThis + restLeader ability costs pass NO source,
+ *     because the card is resting itself rather than being rested by someone's effect.
+ * Records narrowed with `effectSourceController` ("cannot be rested by your opponent's effects")
+ * therefore never block a self-rest — `restSourceMatches` returns false without a source, which
+ * is exactly right: such a card may still attack and block.
+ */
+export function findRestRestrictionRecord(
+  state: GameState,
+  instanceId: string,
+  defs: CardDefinitionLookup = {},
+  restSourceInstanceId?: string,
+): ContinuousEffectRecord | null {
+  return state.continuousEffects.find((record) => {
     const r = record.restRestriction;
     if (!r || r.appliesToInstanceId !== instanceId) return false;
     if (!restSourceMatches(r, state, instanceId, restSourceInstanceId)) return false;
     if (r.condition && !continuousTargetConditionApplies(r.condition, record, state, instanceId, defs)) return false;
     return true;
-  });
+  }) ?? null;
+}
+
+/** Whether `instanceId` currently cannot be rested by the resolving card effect. */
+export function cannotBeRestedByEffect(state: GameState, instanceId: string, restSourceInstanceId?: string, defs: CardDefinitionLookup = {}): boolean {
+  return findRestRestrictionRecord(state, instanceId, defs, restSourceInstanceId) !== null;
+}
+
+/**
+ * Whether `instanceId` cannot rest ITSELF right now — the attack / [Blocker] / "rest this card:"
+ * cost paths. See findRestRestrictionRecord for why this is the same restriction with no source.
+ */
+export function cannotRestSelf(state: GameState, instanceId: string, defs: CardDefinitionLookup = {}): boolean {
+  return findRestRestrictionRecord(state, instanceId, defs) !== null;
 }
 
 function fieldRemovalSourceMatches(

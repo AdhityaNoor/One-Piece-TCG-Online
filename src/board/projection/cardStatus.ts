@@ -11,14 +11,15 @@
  * Rules referenced:
  *  - 7-1-1-1 attack declaration ("this Character cannot attack") -> `cannotAttack`
  *  - 7-1-2-1 [Blocker] activation ("cannot activate [Blocker]")  -> `cannotBlock`
+ *  - "this card cannot be rested" (blocks attacking, [Blocker], rest costs) -> `cannotRest`
  *  - 8-x effect negation ("negate the effect of that card")      -> `nullified`
  */
 import type { CardDefinitionLookup } from '../../engine/rules/shared/definitions';
-import { findAttackRestrictionRecord, findBlockerRestrictionRecord, hasContinuousKeyword } from '../../engine/rules/shared/power';
+import { findAttackRestrictionRecord, findBlockerRestrictionRecord, findRestRestrictionRecord, hasContinuousKeyword } from '../../engine/rules/shared/power';
 import { findEffectNegationRecord } from '../../engine/effects/effectNegation';
 import type { ContinuousEffectDuration, ContinuousEffectRecord, GameState } from '../../engine/state/game';
 
-export type CardStatusKey = 'cannotAttack' | 'cannotBlock' | 'nullified';
+export type CardStatusKey = 'cannotAttack' | 'cannotBlock' | 'cannotRest' | 'nullified';
 
 export interface CardStatus {
   key: CardStatusKey;
@@ -97,6 +98,23 @@ export function computeCardStatuses(
         key: 'cannotBlock',
         label: "Can't block",
         detail: `Cannot activate [Blocker] (${causeText(defs, state, record)}).`,
+      });
+    }
+  }
+
+  // "Cannot be rested". Resting is how a card attacks (7-1-1-1), how [Blocker] is activated
+  // (7-1-2-1) and how a "rest this card:" cost is paid, so this one badge stands for all three —
+  // shown on its own rather than as Can't attack + Can't block so the player can see it is ONE
+  // lock (e.g. OP16-032 Boa Hancock) rather than two unrelated ones. Source-scoped records
+  // ("cannot be rested by your opponent's effects") do not reach here: they never block a
+  // self-rest, so findRestRestrictionRecord is called with no rest source.
+  if (def?.category === 'leader' || def?.category === 'character') {
+    const record = findRestRestrictionRecord(state, instanceId, defs);
+    if (record) {
+      statuses.push({
+        key: 'cannotRest',
+        label: "Can't rest",
+        detail: `Cannot be rested (${causeText(defs, state, record)}) — so it cannot attack, activate [Blocker], or pay a "rest this card" cost.`,
       });
     }
   }

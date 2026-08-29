@@ -183,6 +183,11 @@ function scoreEffectOp(ctx: EffectScoreContext, op: EffectOp, factor = 1): numbe
     }
     case 'chooseTargets':
       return factor * 4;
+    // "Set up to N DON!! active at end of turn" is offered as a count prompt, so the
+    // branches differ ONLY by maxTargets — score it per DON!! or the CPU would see
+    // every count as equally good and take the first option ("None").
+    case 'scheduleSetActiveControllerDonAtEndOfTurn':
+      return factor * 5 * op.maxTargets;
     case 'registerKoReplacement':
     case 'addKoImmunity':
     case 'addKoImmunityAura':

@@ -10,11 +10,23 @@
  * content. MatchScreen owns its own full-viewport chrome and is never
  * touched here, by design.
  *
+ * OnlineRpsToss is mounted here, at the root, rather than inside any one
+ * screen. The server opens the pre-game Rock-Paper-Scissors round in the
+ * window between "both seats ready" and "match started" — which is BEFORE
+ * either client has navigated to `online-match`. Casual clients are still on
+ * `casual-lobby` and ranked clients on `ranked` at that moment, so a toss
+ * mounted under MatchScreen could never be thrown, and the room waited on a
+ * pick that had no UI. It self-gates on `onlineStore.rps` and draws its own
+ * full-screen scrim, so a single root-level mount covers every screen the
+ * toss can open on, including a rematch toss that opens while both players
+ * are still sitting on the finished board.
+ *
  * ComingSoonScreen still exists under /src/app/screens for any future
  * NavigationTarget added before its real screen is built, but nothing
  * currently routes to it.
  */
 import { AppShell, BacksoundControl } from './components';
+import { OnlineRpsToss } from './components/match/OnlineRpsToss';
 import {
   CardLibraryScreen,
   CreditsScreen,
@@ -110,6 +122,7 @@ export function App() {
   return (
     <>
       {bare ? screen : <AppShell>{screen}</AppShell>}
+      <OnlineRpsToss />
       <BacksoundControl />
     </>
   );

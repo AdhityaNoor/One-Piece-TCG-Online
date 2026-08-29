@@ -79,23 +79,80 @@ describe('semantic family: setActive (inverse of rest)', () => {
     expect(resolved.state.cardsById[donIds[1]].donRested).toBe(true); // untouched
   });
 
-  it('setActiveControllerDonAtEndOfTurn schedules automatic DON!! activation', () => {
-    const assignment: CardEffectAssignment = { cardNumber: 'SYN-SRC', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDonAtEndOfTurn', maxTargets: 2 }] } };
-    const registry = programFor(assignment);
+  // "Set up to N DON!! as active at the end of this turn": N > 1 asks the player HOW MANY
+  // (0..N) when the ability resolves, and schedules exactly that many. Only maxTargets: 1
+  // schedules straight through.
+  const donEotAssignment = (maxTargets: number): CardEffectAssignment => ({
+    cardNumber: 'SYN-SRC',
+    templateId: 'ability',
+    params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDonAtEndOfTurn', maxTargets }] },
+  });
+
+  const donEotRig = () => {
     let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
     let sourceId: string;
     ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', SRC));
     const withDon = putDon(rig, 'p1', 3, { rested: true });
-    rig = withDon.rig;
+    return { rig: withDon.rig, sourceId, donIds: withDon.donIds };
+  };
 
-    const scheduled = runTimings(registry['SYN-SRC'], ['onPlay'], rig.state, sourceId, rig.defs, null, registry);
+  it('setActiveControllerDonAtEndOfTurn asks how many, then schedules that many', () => {
+    const registry = programFor(donEotAssignment(2));
+    const { rig, sourceId, donIds } = donEotRig();
+
+    const fired = runTimings(registry['SYN-SRC'], ['onPlay'], rig.state, sourceId, rig.defs, null, registry);
+    const choice = fired.state.pendingChoices[0];
+    expect(choice.kind).toBe('SELECT_OPTION');
+    expect((choice.constraints.options ?? []).map((o) => o.label)).toEqual(['None', '1', '2']);
+    expect(fired.state.delayedEffects ?? []).toHaveLength(0); // nothing scheduled until answered
+
+    // Pick "2".
+    const scheduled = resumeProgram(registry['SYN-SRC'], fired.state, choice, 2, rig.defs, null, registry);
     expect(scheduled.state.delayedEffects).toHaveLength(1);
 
     const ended = runEndPhaseAndHandoff({ ...scheduled.state, currentPhase: 'end' }, rig.defs, registry).state;
-    expect(ended.cardsById[withDon.donIds[0]].donRested).toBe(false);
-    expect(ended.cardsById[withDon.donIds[1]].donRested).toBe(false);
-    expect(ended.cardsById[withDon.donIds[2]].donRested).toBe(true);
+    expect(ended.cardsById[donIds[0]].donRested).toBe(false);
+    expect(ended.cardsById[donIds[1]].donRested).toBe(false);
+    expect(ended.cardsById[donIds[2]].donRested).toBe(true);
     expect(ended.delayedEffects ?? []).toHaveLength(0);
+  });
+
+  it('honours a SMALLER chosen count', () => {
+    const registry = programFor(donEotAssignment(2));
+    const { rig, sourceId, donIds } = donEotRig();
+
+    const fired = runTimings(registry['SYN-SRC'], ['onPlay'], rig.state, sourceId, rig.defs, null, registry);
+    const scheduled = resumeProgram(registry['SYN-SRC'], fired.state, fired.state.pendingChoices[0], 1, rig.defs, null, registry);
+
+    const ended = runEndPhaseAndHandoff({ ...scheduled.state, currentPhase: 'end' }, rig.defs, registry).state;
+    expect(ended.cardsById[donIds[0]].donRested).toBe(false);
+    expect(ended.cardsById[donIds[1]].donRested).toBe(true);
+    expect(ended.cardsById[donIds[2]].donRested).toBe(true);
+  });
+
+  it('"None" schedules nothing at all', () => {
+    const registry = programFor(donEotAssignment(2));
+    const { rig, sourceId, donIds } = donEotRig();
+
+    const fired = runTimings(registry['SYN-SRC'], ['onPlay'], rig.state, sourceId, rig.defs, null, registry);
+    const declined = resumeProgram(registry['SYN-SRC'], fired.state, fired.state.pendingChoices[0], 0, rig.defs, null, registry);
+
+    expect(declined.state.delayedEffects ?? []).toHaveLength(0);
+    const ended = runEndPhaseAndHandoff({ ...declined.state, currentPhase: 'end' }, rig.defs, registry).state;
+    for (const id of donIds) expect(ended.cardsById[id].donRested).toBe(true);
+  });
+
+  it('maxTargets: 1 schedules straight through with no prompt', () => {
+    const registry = programFor(donEotAssignment(1));
+    const { rig, sourceId, donIds } = donEotRig();
+
+    const fired = runTimings(registry['SYN-SRC'], ['onPlay'], rig.state, sourceId, rig.defs, null, registry);
+    expect(fired.state.pendingChoices).toHaveLength(0);
+    expect(fired.state.delayedEffects).toHaveLength(1);
+
+    const ended = runEndPhaseAndHandoff({ ...fired.state, currentPhase: 'end' }, rig.defs, registry).state;
+    expect(ended.cardsById[donIds[0]].donRested).toBe(false);
+    expect(ended.cardsById[donIds[1]].donRested).toBe(true);
   });
 
   it('restOpponentDonAtStartOfNextMain schedules automatic opponent DON!! rest', () => {

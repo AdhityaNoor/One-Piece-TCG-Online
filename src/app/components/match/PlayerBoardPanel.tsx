@@ -143,7 +143,9 @@ export function leaderCharacterSelectable(
         isOwn &&
         card.orientation === 'active' &&
         !card.summoningSick &&
-        !card.statuses.some((status) => status.key === 'cannotAttack')
+        // 'cannotRest' too: attacking rests the attacker, so a rest-locked card
+        // cannot declare an attack and must not look selectable.
+        !card.statuses.some((status) => status.key === 'cannotAttack' || status.key === 'cannotRest')
       );
     case 'selectAttackTarget':
       if (!isOpponent) return false;

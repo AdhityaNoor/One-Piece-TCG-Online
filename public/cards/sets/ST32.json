@@ -2,7 +2,7 @@
  {
   "cardNumber": "ST32-001",
   "setCode": "ST32",
-  "setName": "ST32",
+  "setName": "GREEN Roronoa Zoro",
   "category": "character",
   "colors": [
    "green"
@@ -16,8 +16,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Kin'emon",
@@ -77,7 +77,7 @@
  {
   "cardNumber": "ST32-002",
   "setCode": "ST32",
-  "setName": "ST32",
+  "setName": "GREEN Roronoa Zoro",
   "category": "character",
   "colors": [
    "green"
@@ -91,8 +91,8 @@
   "rarity": "Super Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Kouzuki Oden",
@@ -152,7 +152,7 @@
  {
   "cardNumber": "ST32-003",
   "setCode": "ST32",
-  "setName": "ST32",
+  "setName": "GREEN Roronoa Zoro",
   "category": "character",
   "colors": [
    "green"
@@ -165,8 +165,8 @@
   "rarity": "Super Rare",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Dracule Mihawk",
@@ -225,7 +225,7 @@
  {
   "cardNumber": "ST32-004",
   "setCode": "ST32",
-  "setName": "ST32",
+  "setName": "GREEN Roronoa Zoro",
   "category": "character",
   "colors": [
    "green"
@@ -239,8 +239,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Silvers Rayleigh",
@@ -297,7 +297,7 @@
  {
   "cardNumber": "ST32-005",
   "setCode": "ST32",
-  "setName": "ST32",
+  "setName": "GREEN Roronoa Zoro",
   "category": "character",
   "colors": [
    "green"
@@ -311,8 +311,8 @@
   "rarity": "Common",
   "block": "Block 5",
   "legality": {
-   "standard": "Standard unreleased",
-   "extra": "Extra unreleased"
+   "standard": "Standard legal",
+   "extra": "Extra legal"
   },
   "en": {
    "name": "Roronoa Zoro",

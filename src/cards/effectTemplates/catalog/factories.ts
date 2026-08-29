@@ -1417,8 +1417,34 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'setActive', target: { sel: 'var', name: 't' } },
       ];
     }
-    case 'setActiveControllerDonAtEndOfTurn':
-      return [{ op: 'scheduleSetActiveControllerDonAtEndOfTurn', maxTargets: f.maxTargets }];
+    case 'setActiveControllerDonAtEndOfTurn': {
+      // "Set UP TO N of your DON!! cards as active at the end of this turn" — the
+      // count is the player's choice, not always N. It matters: DON!! set active at
+      // the end of your turn stay active through your opponent's turn, where the
+      // active/rested split gates other cards ([DON!! x1] conditions, "if you have
+      // X or less active DON!!", rest-DON!! costs). The end-of-turn delayed effect
+      // itself cannot prompt (phase steps never block on input — see
+      // phases/phaseStepResult.ts), so the count is chosen HERE, when the ability
+      // resolves, and the chosen number is baked into the scheduled record.
+      // KNOWN LIMITATION / needs ruling confirmation: strictly the choice belongs at
+      // the moment the delayed effect resolves; asking on resolution means the player
+      // commits before seeing the end-of-turn board.
+      const max = f.maxTargets;
+      if (max < 2) return [{ op: 'scheduleSetActiveControllerDonAtEndOfTurn', maxTargets: max }];
+      return [{
+        op: 'chooseOption',
+        prompt: `Set up to ${max} of your DON!! cards as active at the end of this turn. How many?`,
+        options: [
+          // `clearResult` (not an empty branch) so a following ifPrevious does not
+          // read the PREVIOUS function's __lastMoved and fire off a declined choice.
+          { label: 'None', ops: [{ op: 'clearResult' }] },
+          ...Array.from({ length: max }, (_, i) => ({
+            label: `${i + 1}`,
+            ops: [{ op: 'scheduleSetActiveControllerDonAtEndOfTurn' as const, maxTargets: i + 1 }],
+          })),
+        ],
+      }];
+    }
     case 'restOpponentDon': {
       const maxTargets = f.maxTargets ?? 1;
       return [

@@ -10,7 +10,7 @@ import type { ActionExecuteResult } from '../../actions/actionExecuteResult';
 import { createActionLogger } from '../shared/actionLogger';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
-import { cannotActivateBlocker, hasContinuousKeyword } from '../shared/power';
+import { cannotActivateBlocker, cannotRestSelf, hasContinuousKeyword } from '../shared/power';
 import { fireOnBlock, fireRestTransitions, fireOpponentBlockerActivatedReactions, type EffectTemplateRegistry } from '../../effects';
 
 /**
@@ -41,6 +41,9 @@ export function hasAnyLegalBlocker(state: GameState, defendingPlayerId: string, 
     const def = defs[inst.cardDefinitionId];
     if (!def || (!def.hasBlocker && !hasContinuousKeyword(defs, state, id, 'blocker'))) continue;
     if (isBlockedByRestriction(state, id, defs)) continue;
+    // Activating [Blocker] rests the card, so a rest-locked Character is not a legal blocker
+    // and must not hold the Block Step open on its own.
+    if (cannotRestSelf(state, id, defs)) continue;
     return true;
   }
   return false;
@@ -76,6 +79,9 @@ export function validateActivateBlocker(state: GameState, action: ActivateBlocke
       reasons.push(`'${action.blockerInstanceId}' does not have [Blocker].`);
     } else if (isBlockedByRestriction(state, action.blockerInstanceId, defs)) {
       reasons.push(`'${action.blockerInstanceId}' cannot activate [Blocker] due to an active blocker restriction.`);
+    } else if (cannotRestSelf(state, action.blockerInstanceId, defs)) {
+      // [Blocker] is activated by RESTING this card (7-1-2-1), so "cannot be rested" blocks it.
+      reasons.push(`'${action.blockerInstanceId}' cannot activate [Blocker] — a card effect is preventing it from being rested (7-1-2-1).`);
     }
   }
 

@@ -9,6 +9,7 @@ import type { AbilityCost } from './effectIr';
 import type { GameLogEntry } from '../logs/logEntry';
 import { createActionLogger } from '../rules/shared/actionLogger';
 import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
+import { cannotRestSelf } from '../rules/shared/power';
 
 function trashThisSourceZone(currentZone: string): 'characterArea' | 'stageArea' | null {
   return currentZone === 'characterArea' || currentZone === 'stageArea' ? currentZone : null;
@@ -175,6 +176,9 @@ export function canPayAbilityCost(
         const source = state.cardsById[sourceInstanceId];
         if (!source || source.orientation !== 'active') {
           reasons.push('Cost requires resting the source card, but it is already rested or not in play.');
+        } else if (cannotRestSelf(state, sourceInstanceId)) {
+          // "Rest this Character:" is a rest, so a rest-locked card cannot pay it (2-4-2).
+          reasons.push('Cost requires resting the source card, but a card effect is preventing it from being rested.');
         }
         break;
       }
@@ -201,6 +205,8 @@ export function canPayAbilityCost(
         const leader = leaderId ? state.cardsById[leaderId] : undefined;
         if (!leader || leader.orientation !== 'active') {
           reasons.push('Cost requires resting your Leader, but it is already rested or not in play.');
+        } else if (leaderId && cannotRestSelf(state, leaderId)) {
+          reasons.push('Cost requires resting your Leader, but a card effect is preventing it from being rested.');
         }
         break;
       }

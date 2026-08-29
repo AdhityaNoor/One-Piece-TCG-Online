@@ -232,6 +232,7 @@ function KeywordLabel({ keyword, compact = false }: { keyword: KeywordKey; compa
 const STATUS_TONE: Record<CardStatusKey, string> = {
   cannotAttack: 'border-[#ff1f1f] bg-[#3b0000]/92 text-[#ff6b6b] shadow-[0_10px_24px_rgba(0,0,0,0.55),0_0_18px_rgba(255,31,31,0.34)]',
   cannotBlock: 'border-[#ff1f1f] bg-[#3b0000]/92 text-[#ff6b6b] shadow-[0_10px_24px_rgba(0,0,0,0.55),0_0_18px_rgba(255,31,31,0.34)]',
+  cannotRest: 'border-[#ff1f1f] bg-[#3b0000]/92 text-[#ff6b6b] shadow-[0_10px_24px_rgba(0,0,0,0.55),0_0_18px_rgba(255,31,31,0.34)]',
   nullified: 'border-[#c084fc] bg-[#25073f]/92 text-[#e9d5ff] shadow-[0_10px_24px_rgba(0,0,0,0.55),0_0_18px_rgba(192,132,252,0.34)]',
 };
 

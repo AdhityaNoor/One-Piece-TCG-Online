@@ -2,6 +2,7 @@ import type { CardDefinitionLookup } from '../../engine/rules/shared';
 import { computeCurrentPower } from '../../engine/rules/shared/power';
 import {
   cannotAttack,
+  cannotRestSelf,
   getForcedAttackTargetId,
 } from '../../engine/rules/shared/power';
 import type { GameState } from '../../engine/state/game';
@@ -42,6 +43,8 @@ function canAttackLeader(
   if (attacker.orientation !== 'active') return false;
   if (attacker.summoningSick && !hasEffectiveCombatKeyword(defs, state, attackerInstanceId, 'rush')) return false;
   if (cannotAttack(state, attackerInstanceId, defs)) return false;
+  // Declaring an attack rests the attacker, so a rest-locked card is not a lethal line.
+  if (cannotRestSelf(state, attackerInstanceId, defs)) return false;
 
   const opponentId = getOpponentId(state, playerId);
   const leaderId = state.players[opponentId]?.leaderInstanceId;
