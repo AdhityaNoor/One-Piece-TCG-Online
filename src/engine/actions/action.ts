@@ -39,6 +39,16 @@ interface BaseAction<T extends GameActionType> {
 export interface PlayCharacterAction extends BaseAction<'PLAY_CHARACTER'> {
   handCardInstanceId: string;
   donInstanceIds: readonly string[];
+  /**
+   * 3-7-6-1, optional. The Character this play replaces, named UP FRONT when the Character Area
+   * is already full — the board lets the player pick it (and see "… will be trashed") before
+   * committing the DON!!, so the play and its consequence are one decision instead of a play
+   * followed by a surprise prompt.
+   *
+   * Omit it and nothing changes: the engine raises the 'rule:characterAreaOverflow' PendingChoice
+   * exactly as before, which is still the path for a Character that enters play by card effect.
+   */
+  replaceInstanceId?: string;
 }
 
 /** 6-5-3-1, 2-7-4. */

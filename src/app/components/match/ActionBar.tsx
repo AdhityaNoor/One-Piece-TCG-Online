@@ -5,7 +5,7 @@ import { countAvailableDon } from '../../../board/projection';
 import { resolveAssetUrl } from '../../lib/assetUrl';
 import { Button } from '../Button';
 import { Modal } from '../Modal';
-import type { useBoardSelection } from './useBoardSelection';
+import type { BoardSelectionMode, useBoardSelection } from './useBoardSelection';
 
 export interface ActionBarProps {
   phase: GameState['currentPhase'];
@@ -25,9 +25,10 @@ interface EndPhaseWarning {
 
 const INSTRUCTIONS: Record<string, string> = {
   confirmPlayCost: 'Confirm the play cost. The game will rest active DON!! automatically.',
+  confirmPlayCostReplace: 'Your Character Area is full (3-7-6-1). Tap the Character this one replaces — it goes to the trash.',
   selectAttacker: 'Tap your own active Leader or Character to attack with.',
   selectAttackTarget: "Tap the opponent's Leader, or a RESTED Character, to attack.",
-  selectBlocker: 'Tap your own active [Blocker] Character.',
+  selectBlocker: 'Choose a [Blocker] Character to take the attack — it rests and becomes the new target. Pass to let the attack through.',
   selectActivateSource: 'Tap your own Leader, Character, or Stage that has an [Activate: Main] effect.',
   payingActivateEffectCost: 'Tap DON!! in your Cost Area to return for the activation cost, then Confirm.',
   payingEventMainCost: 'Tap DON!! on your field to return for the Event cost, then Confirm.',
@@ -109,6 +110,18 @@ function isCardView(card: CardView | null): card is CardView {
   return card !== null;
 }
 
+/**
+ * The play-confirm button's label. States the cost, the card, and — when the Character Area is
+ * full (3-7-6-1) — what it costs you on the board, so the trash is part of the decision instead
+ * of a prompt sprung after the DON!! is already committed.
+ */
+function playConfirmLabel(mode: Extract<BoardSelectionMode, { kind: 'confirmPlayCost' }>): string {
+  const play = mode.cost > 0 ? `Rest ${mode.cost} DON!! to play ${mode.cardName}` : `Play ${mode.cardName}`;
+  if (mode.replaceCandidateIds.length === 0) return play;
+  if (!mode.replaceInstanceId) return `${play} — choose who it replaces`;
+  return `${play} — ${mode.replaceCardName ?? 'the chosen Character'} will be trashed`;
+}
+
 function formatCardRole(card: CardView): string {
   return card.category === 'leader' ? 'Leader' : card.category === 'character' ? 'Character' : card.category === 'stage' ? 'Stage' : card.category;
 }
@@ -159,7 +172,6 @@ export const ActionBar = memo(function ActionBar({ phase, turnNumber, battle, ac
     mode,
     lastError,
     cancel,
-    beginActivateBlocker,
     skipOnOppAttackWindow,
     hasActivateMain,
     hasUnusedActivateMain,
@@ -309,21 +321,39 @@ export const ActionBar = memo(function ActionBar({ phase, turnNumber, battle, ac
     );
   }
 
+  // [Blocker] (7-1-2-1), once the window above is done. Same reasoning as that one: "Activate
+  // Blocker" was a button that appeared to do nothing — it only switched modes, leaving the
+  // player to work out which Character to tap. Declining is Pass, which is the Block Step's own
+  // exit, so there is no separate Skip here.
+  if (mode.kind === 'selectBlocker') {
+    const eligible = mode.candidateInstanceIds.length;
+    return (
+      <div className="flex flex-col gap-2">
+        {errorBanner}
+        <p className="text-xs text-white/60">{INSTRUCTIONS.selectBlocker}</p>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="ghost" size="sm" onClick={passStep}>
+            Pass ({eligible} blocker{eligible === 1 ? '' : 's'} available)
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // Battle-step branches are checked ahead of the generic `mode.kind !==
   // 'idle'` block below: the Counter Step auto-enters BoardSelectionMode's
   // 'selectCounterCard' (see useBoardSelection.ts) the instant it starts, so
   // if the generic block ran first it would intercept that mode and hide the
   // real Pass button behind a stale instruction line.
   if (battle && battle.step === 'block') {
-    // Reaching here means the [On Your Opponent's Attack] window is closed (skipped, or nothing
-    // left to activate) — the two branches above return while it is open, so the old
-    // "[On Opponent's Attack]" button has no reason to exist any more.
-    const hasEligibleBlocker = actingBoard.characterArea.some((card) => card.orientation === 'active' && card.hasBlocker);
+    // Reaching here means BOTH Block-Step windows are closed — the branches above return while
+    // either is open, and useBoardSelection opens them automatically whenever there is anything
+    // to choose. So neither "Activate Blocker" nor "[On Opponent's Attack]" has any reason to
+    // exist as a button; all that is left is the way out.
     return (
       <div className="flex flex-col gap-2">
         {errorBanner}
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" size="sm" disabled={!hasEligibleBlocker} onClick={beginActivateBlocker}>Activate Blocker</Button>
           <Button variant="ghost" size="sm" onClick={passStep}>Pass (skip Block)</Button>
         </div>
       </div>
@@ -363,11 +393,22 @@ export const ActionBar = memo(function ActionBar({ phase, turnNumber, battle, ac
     return (
       <div className="flex flex-col gap-2">
         {errorBanner}
-        <p className="text-xs text-white/60">{INSTRUCTIONS[mode.kind]}</p>
+        <p className="text-xs text-white/60">
+          {mode.kind === 'confirmPlayCost' && mode.replaceCandidateIds.length > 0 && !mode.replaceInstanceId
+            ? INSTRUCTIONS.confirmPlayCostReplace
+            : INSTRUCTIONS[mode.kind]}
+        </p>
         <div className="flex flex-wrap gap-2">
           {mode.kind === 'confirmPlayCost' && (
-            <Button variant="primary" size="sm" onClick={confirmPlayCard}>
-              Play {mode.cardName} ({mode.cost} DON!!)
+            <Button
+              variant="primary"
+              size="sm"
+              // A full field must name its replacement first — confirmPlayCard refuses otherwise,
+              // and a button that silently does nothing is what this whole flow is replacing.
+              disabled={mode.replaceCandidateIds.length > 0 && !mode.replaceInstanceId}
+              onClick={confirmPlayCard}
+            >
+              {playConfirmLabel(mode)}
             </Button>
           )}
           {mode.kind === 'payingActivateEffectCost' && (

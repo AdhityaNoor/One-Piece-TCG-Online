@@ -20,6 +20,8 @@ import { fetchAllSets, fetchSetCards } from '../../cards/api/client';
 import { withCache, type CardPrintingDto } from '../../cards/api';
 import { browserFetch, cardLibraryCache, CARD_LIBRARY_CACHE_TTL_MS } from '../lib/runtime';
 import { useAuthStore } from '../store/authStore';
+import { configureAudioSettings, installAudioUnlock, soundManager } from '../../audio';
+import { useSettingsStore } from '../store/settingsStore';
 
 // Give the global a proper type so TypeScript doesn't complain.
 declare global {
@@ -43,6 +45,27 @@ export function useAppInit(): { ready: boolean; progress: number } {
     ran.current = true;
 
     void useAuthStore.getState().init();
+
+    // Audio bootstrap. /src/audio deliberately knows nothing about the app's
+    // stores (see audio/runtime.ts) — this is the one place that hands it the
+    // user's settings, and re-hands them on every change so the bus gains
+    // follow the sliders live. installAudioUnlock arms the one-shot gesture
+    // listener browsers require before an AudioContext may make noise.
+    const readAudioSettings = () => {
+      const s = useSettingsStore.getState();
+      return {
+        sfxEnabled: s.sfxEnabled,
+        sfxVolume: s.sfxVolume,
+        musicEnabled: s.backsoundEnabled,
+        musicVolume: s.backsoundVolume,
+      };
+    };
+    configureAudioSettings(readAudioSettings);
+    useSettingsStore.subscribe(() => soundManager.syncSettings());
+    installAudioUnlock();
+    // Boot-group cues are the menu/UI set — small, and needed before the
+    // first click. Match cues are fetched when a board mounts instead.
+    void soundManager.preload('boot');
 
     void (async () => {
       // 5 → 10 %: fetch the index to learn how many sets exist

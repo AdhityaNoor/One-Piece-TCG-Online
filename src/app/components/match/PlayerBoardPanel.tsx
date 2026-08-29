@@ -80,6 +80,14 @@ export interface PlayerBoardPanelProps {
   /** True for own in-play cards whose curated program exposes an [On Your Opponent's Attack] ability. */
   canOnOppAttackCard?: (card: CardView) => boolean;
   canAttackCard?: (card: CardView) => boolean;
+  /** Character the pointer is over while a hand card is dragged onto a full field (3-7-6-1). */
+  dragReplaceTargetId?: string | null;
+  /**
+   * True on the mat belonging to the player whose turn it is, which lights up.
+   * Chosen by getGlowPlayerId (board/projection) — see its doc comment for why
+   * the rule differs between the pinned and hotseat boards.
+   */
+  isActiveSide?: boolean;
   battlePowerInstanceIds?: Set<string>;
   /** Passed down to PileStack — hides ghost layers while board is active. */
   boardFocused?: boolean;
@@ -147,7 +155,11 @@ export function leaderCharacterSelectable(
       if (zone === 'leaderArea') return true;
       return zone === 'characterArea' && card.orientation === 'rested';
     case 'selectBlocker':
-      return isOwn && zone === 'characterArea' && card.orientation === 'active' && card.hasBlocker;
+      // The mode's candidate list is built by validateAction (see useBoardSelection's
+      // isBlockerEligible), so it already accounts for the once-per-battle cap and for
+      // "cannot activate [Blocker]" restrictions. The old `active && hasBlocker` test here
+      // knew about neither, and offered cards the engine would refuse.
+      return isOwn && zone === 'characterArea' && mode.candidateInstanceIds.includes(card.instanceId);
     case 'selectActivateSource':
       // The "Activate Effect" flow: own Leader/Character with a curated [Activate: Main] ability.
       return isOwn && canActivate;
@@ -162,6 +174,10 @@ export function leaderCharacterSelectable(
       if (mode.selectedIds.includes(card.instanceId)) return true;
       if (mode.blockedInstanceIds.includes(card.instanceId)) return false;
       return mode.candidateInstanceIds.includes(card.instanceId);
+    case 'confirmPlayCost':
+      // 3-7-6-1: the play overflows the Character Area, so the confirm is also asking WHICH of
+      // your Characters it replaces. Nothing else on the mat is tappable during a confirm.
+      return isOwn && zone === 'characterArea' && mode.replaceCandidateIds.includes(card.instanceId);
     case 'idle':
       // Idle: an own card with a ready [Activate: Main] effect is tappable directly (the ⚡ badge).
       return isOwn && canActivate;
@@ -180,11 +196,11 @@ export function leaderCharacterSelectable(
  * click through it.
  */
 export function fieldChoiceDimmed(mode: BoardSelectionMode, card: CardView, selectable = false): boolean {
-  // The [On Your Opponent's Attack] window is a choice over field cards too, so it gets the same
-  // treatment: everything the player cannot pick right now recedes. `selectable` is passed in
-  // rather than re-derived here so the dim, the ring and the tap all come from the ONE
-  // eligibility predicate (canOnOppAttackCard) instead of three copies that can disagree.
-  if (mode.kind === 'selectOnOppAttackSource') return !selectable;
+  // The two auto-opening Block-Step windows are choices over field cards too, so they get the
+  // same treatment: everything the player cannot pick right now recedes. `selectable` is passed
+  // in rather than re-derived here so the dim, the ring and the tap all come from ONE
+  // eligibility answer instead of three copies that can disagree.
+  if (isPromptWindowMode(mode)) return !selectable;
   if (mode.kind !== 'resolvingFieldChoice') return false;
   // Already picked: never dim — it carries the selected ring instead.
   if (mode.selectedIds.includes(card.instanceId)) return false;
@@ -193,6 +209,46 @@ export function fieldChoiceDimmed(mode: BoardSelectionMode, card: CardView, sele
   // the player: this card cannot be chosen right now.
   return !mode.candidateInstanceIds.includes(card.instanceId)
     || mode.blockedInstanceIds.includes(card.instanceId);
+}
+
+/**
+ * The auto-opening "the game is waiting on you to pick one of these" windows (7-1-1-3
+ * [On Your Opponent's Attack], then 7-1-2-1 [Blocker]). Both dim the rest of the mat and ring
+ * their candidates; neither is reachable from a button any more.
+ */
+export function isPromptWindowMode(mode: BoardSelectionMode): boolean {
+  if (mode.kind === 'selectOnOppAttackSource' || mode.kind === 'selectBlocker') return true;
+  // A confirm that is ALSO asking which Character to replace behaves like a window; a plain
+  // confirm (field not full) leaves the mat alone.
+  return mode.kind === 'confirmPlayCost' && mode.replaceCandidateIds.length > 0;
+}
+
+/**
+ * Drives BoardCardTile's `highlighted` ring: this card is one of the ones being asked for.
+ *
+ * `dragReplaceTargetId` is the Character the pointer is hovering while a hand card is dragged
+ * over a full field — it rings before any mode exists, which is what makes the drag read as
+ * "drop this ON that one".
+ */
+export function promptHighlighted(
+  mode: BoardSelectionMode,
+  selectable: boolean,
+  card?: CardView,
+  dragReplaceTargetId?: string | null,
+): boolean {
+  if (card && dragReplaceTargetId && card.instanceId === dragReplaceTargetId) return true;
+  // Effect targeting counts too. A field choice is the case where the ring
+  // matters most — its candidates can sit on EITHER board — and it was the one
+  // prompt that dimmed the rest of the mat without ringing what was left.
+  // isPromptWindowMode is deliberately not widened to cover it: that predicate
+  // also drives fieldChoiceDimmed, which already handles this mode its own way
+  // (selected cards stay undimmed, budget-blocked ones do not).
+  return selectable && (isPromptWindowMode(mode) || mode.kind === 'resolvingFieldChoice');
+}
+
+/** The already-chosen replacement carries the amber "picked" ring, same as a field-choice pick. */
+export function replaceTargetSelected(mode: BoardSelectionMode, card: CardView): boolean {
+  return mode.kind === 'confirmPlayCost' && mode.replaceInstanceId === card.instanceId;
 }
 
 /** True while `card` is one of the current field choice's picked cards (drives the selected ring). */
@@ -354,6 +410,39 @@ const COMPASS_OVERHANG = '24%';
  * already is and the palette is left alone.
  */
 const MAT_TEXTURE = '/ui/bg_mv.webp';
+
+/**
+ * The mat's own recessed edge, kept identical in both states so turning the
+ * turn-light on adds to the mat rather than restyling it. (Tailwind's
+ * `shadow-inner shadow-black/30`, written out — an inline boxShadow has to
+ * replace that class outright, not sit beside it.)
+ */
+const MAT_INNER_SHADOW = 'inset 0 2px 4px 0 rgba(0,0,0,0.3)';
+
+/**
+ * How much clear space the mat is inset by, so an outward glow has somewhere
+ * to land. Each mat sits flush against a clipping ancestor on its own OUTER
+ * edge — measured slack above the top mat and below the bottom one is zero —
+ * so a glow drawn outward with no inset is sliced flat on exactly the side it
+ * most needs to show. Rather than loosen those clip guards (they hold the
+ * board's scaling together), the mat gives up this many pixels on every side
+ * and glows into them.
+ */
+const MAT_GLOW_GUTTER = 'p-2.5'; // 10px
+
+/**
+ * Gold, the colour the Battle Line and every other turn cue already use.
+ *
+ * OUTWARD, and deliberately nothing inset: light thrown across the playing
+ * surface dims the cards sitting on it, which is the opposite of helpful on
+ * the mat you are being told to look at. The falloff is tuned to finish
+ * inside MAT_GLOW_GUTTER so the halo fades out rather than meeting an edge.
+ */
+const MAT_ACTIVE_GLOW = [
+  MAT_INNER_SHADOW,
+  '0 0 0 1px rgba(217,164,65,0.60)',
+  '0 0 10px 1px rgba(217,164,65,0.45)',
+].join(', ');
 const MAT_TEXTURE_STRENGTH = 0.55;
 /**
  * The art averages 81% luminance, and soft-light lightens wherever its source
@@ -663,7 +752,7 @@ function MatCell({
  * toggle, chat, hover elsewhere) no longer re-renders this panel — or
  * anything inside it (BoardCardTile/DonStack/PileStack per card) — at all.
  */
-export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, canActivateCard, canOnOppAttackCard, canAttackCard, battlePowerInstanceIds, boardFocused = false, onCardTap, onCardAttack, onAttachedDonLabelTap, onCardZoom, onAttackTargetHover, canGiveDonOnCard, onGiveDon, onReturnGivenDon, allowReturnGivenDon = true }: PlayerBoardPanelProps) {
+export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, isActiveSide = false, mode, canActivateCard, canOnOppAttackCard, canAttackCard, dragReplaceTargetId = null, battlePowerInstanceIds, boardFocused = false, onCardTap, onCardAttack, onAttachedDonLabelTap, onCardZoom, onAttackTargetHover, canGiveDonOnCard, onGiveDon, onReturnGivenDon, allowReturnGivenDon = true }: PlayerBoardPanelProps) {
   const attackerSelected = selectedAttackerIds(mode);
   // Mark/select own in-play cards that can activate a [Activate: Main] effect.
   const canActivate = (card: CardView): boolean => isOwn && !!canActivateCard?.(card);
@@ -792,7 +881,8 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
         selected={attackerSelected.has(leaderCard.instanceId) || fieldChoiceSelected(mode, leaderCard)}
         dimmed={fieldChoiceDimmed(mode, leaderCard, leaderSelectable)}
         activatable={mode.kind === 'idle' && canActivate(leaderCard)}
-        highlighted={mode.kind === 'selectOnOppAttackSource' && leaderSelectable}
+        highlighted={promptHighlighted(mode, leaderSelectable)}
+        highlightTone={isOwn ? 'own' : 'opponent'}
         attackable={mode.kind === 'idle' && canAttack(leaderCard)}
         showBattlePower={battlePowerInstanceIds?.has(leaderCard.instanceId)}
         attachedDonSelectable={attachedDonSelectable(leaderCard)}
@@ -822,7 +912,8 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
       selectable={stageSelectable}
       dimmed={fieldChoiceDimmed(mode, stageCard, stageSelectable)}
       activatable={mode.kind === 'idle' && canActivate(stageCard)}
-      highlighted={mode.kind === 'selectOnOppAttackSource' && stageSelectable}
+      highlighted={promptHighlighted(mode, stageSelectable)}
+      highlightTone={isOwn ? 'own' : 'opponent'}
       showBattlePower={battlePowerInstanceIds?.has(stageCard.instanceId)}
       onActivate={mode.kind === 'idle' && canActivate(stageCard) ? () => onCardTap(board.playerId, 'stageArea', stageCard) : undefined}
       onSelect={() => onCardTap(board.playerId, 'stageArea', stageCard)}
@@ -871,10 +962,11 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
               card={card}
               size="field"
               selectable={characterSelectable}
-              selected={attackerSelected.has(card.instanceId) || fieldChoiceSelected(mode, card)}
+              selected={attackerSelected.has(card.instanceId) || fieldChoiceSelected(mode, card) || replaceTargetSelected(mode, card)}
               dimmed={fieldChoiceDimmed(mode, card, characterSelectable)}
               activatable={mode.kind === 'idle' && canActivate(card)}
-              highlighted={mode.kind === 'selectOnOppAttackSource' && characterSelectable}
+              highlighted={promptHighlighted(mode, characterSelectable, card, dragReplaceTargetId)}
+              highlightTone={isOwn ? 'own' : 'opponent'}
               attackable={mode.kind === 'idle' && canAttack(card)}
               showBattlePower={battlePowerInstanceIds?.has(card.instanceId)}
               attachedDonSelectable={attachedDonSelectable(card)}
@@ -1257,10 +1349,12 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   );
 
   const mat = (
-    <div className="flex min-h-0 flex-1 items-stretch justify-center overflow-hidden">
+    <div className={`flex min-h-0 flex-1 items-stretch justify-center overflow-visible ${MAT_GLOW_GUTTER}`}>
       <div
-        className="relative grid h-full w-full flex-1 gap-2 overflow-hidden rounded-xl border border-white/10 p-2 shadow-inner shadow-black/30"
+        className="relative grid h-full w-full flex-1 gap-2 overflow-hidden rounded-xl border p-2 transition-[box-shadow,border-color] duration-300"
         style={{
+          borderColor: isActiveSide ? 'rgba(217,164,65,0.7)' : 'rgba(255,255,255,0.1)',
+          boxShadow: isActiveSide ? MAT_ACTIVE_GLOW : MAT_INNER_SHADOW,
           backgroundImage: matShadeGradient(leaderCard?.colors ?? []),
           // The texture layer below blends with this background and must not
           // reach past it to the page. Without isolation the mat's own

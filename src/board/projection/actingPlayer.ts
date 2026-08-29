@@ -23,3 +23,25 @@ export function getActingPlayerId(state: GameState): string {
   }
   return state.activePlayerId;
 }
+
+/**
+ * Which player's playmat is lit as "the playing side".
+ *
+ * The answer differs by mode because the two modes carry the turn in
+ * different places, and getting this wrong is silent rather than broken:
+ *
+ * - PINNED board (Casual / VS CPU, `localPlayerId` set). The board never
+ *   moves, so position says nothing about the turn and the light has to carry
+ *   it. That means the TURN player — steady for a whole turn. Not
+ *   getActingPlayerId(): that names the defender the instant an attack is
+ *   declared, and the light would cross the Battle Line several times a turn.
+ *
+ * - FLIPPING board (hotseat, `localPlayerId` null). MatchScreen defines the
+ *   bottom seat AS the turn player there, so a turn-player light sits on the
+ *   bottom mat forever and tells nobody anything. Position already says whose
+ *   turn it is; what a shared screen actually needs to show is who owes the
+ *   next input, which is exactly getActingPlayerId().
+ */
+export function getGlowPlayerId(state: GameState, localPlayerId: string | null): string {
+  return localPlayerId !== null ? state.activePlayerId : getActingPlayerId(state);
+}

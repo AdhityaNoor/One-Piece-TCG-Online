@@ -37,10 +37,35 @@ export type BoardZoneKind = 'hand' | 'leaderArea' | 'characterArea' | 'stageArea
 
 export type BoardSelectionMode =
   | { kind: 'idle' }
-  | { kind: 'confirmPlayCost'; handCardInstanceId: string; cardCategory: 'character' | 'stage' | 'event'; cardName: string; cost: number; donInstanceIds: string[]; abilityCostDonInstanceIds?: string[] }
+  /**
+   * Confirming a play. When the Character Area is already full (3-7-6-1) this ALSO carries the
+   * replacement pick: `replaceCandidateIds` is non-empty, the board rings those Characters, and
+   * the confirm button stays disabled until one is chosen — so "which of mine goes to the trash"
+   * is answered before the DON!! is committed, not sprung as a prompt afterwards.
+   */
+  | {
+      kind: 'confirmPlayCost';
+      handCardInstanceId: string;
+      cardCategory: 'character' | 'stage' | 'event';
+      cardName: string;
+      cost: number;
+      donInstanceIds: string[];
+      abilityCostDonInstanceIds?: string[];
+      /** Empty unless this play overflows the Character Area. */
+      replaceCandidateIds: string[];
+      replaceInstanceId: string | null;
+      /** Printed name of the picked replacement, for the confirm copy. */
+      replaceCardName: string | null;
+    }
   | { kind: 'selectAttacker' }
   | { kind: 'selectAttackTarget'; attackerInstanceId: string; forcedTargetInstanceId?: string }
-  | { kind: 'selectBlocker' }
+  /**
+   * The [Blocker] window (7-1-2-1). Auto-entered once the [On Your Opponent's Attack] window is
+   * done, for the same reason: "Activate Blocker" used to be a button that did nothing visible —
+   * it only switched modes, and the player still had to work out which Character to tap. Carries
+   * the engine-validated candidate set so the board can highlight and dim from the mode alone.
+   */
+  | { kind: 'selectBlocker'; candidateInstanceIds: string[] }
   /**
    * Counter Step, defending player. Entered automatically the moment
    * battle.step becomes 'counter' (see the useEffect below) rather than via
@@ -420,6 +445,30 @@ export function useBoardSelection(actingPlayerId: string | null) {
     return fieldIds.filter((id) => isOnOppAttackEligible(id));
   };
 
+  /**
+   * Whether `instanceId` could legally ACTIVATE_BLOCKER right now (7-1-2-1).
+   *
+   * Asks the ENGINE rather than re-testing `active && hasBlocker` in the UI: that shorter test
+   * silently ignored the once-per-battle cap and, more visibly, every "cannot activate [Blocker]"
+   * restriction — so a Character wearing the new "Can't block" status still looked tappable and
+   * failed on click.
+   */
+  const isBlockerEligible = (instanceId: string): boolean => {
+    if (!state || !actingPlayerId) return false;
+    return validateAction(
+      state,
+      { type: 'ACTIVATE_BLOCKER', actionId: 'ui-preview', playerId: actingPlayerId, blockerInstanceId: instanceId },
+      defs,
+      registry,
+    ).legal;
+  };
+
+  /** Every Character the defender could still block with this battle, in board order. */
+  const blockerCandidateIds = (): string[] => {
+    if (!state || !actingPlayerId) return [];
+    return (state.players[actingPlayerId]?.characterArea.cardIds ?? []).filter((id) => isBlockerEligible(id));
+  };
+
   // --- The [On Your Opponent's Attack] window -------------------------------
   //
   // Rule placement: blueprint section 5 puts [On Your Opponent's Attack] in the ATTACK STEP
@@ -458,31 +507,58 @@ export function useBoardSelection(actingPlayerId: string | null) {
     if (mode.kind === 'selectOnOppAttackSource') reset();
   }
 
+  const sameOrder = (a: readonly string[], b: readonly string[]): boolean =>
+    a.length === b.length && a.every((id, index) => id === b[index]);
+
+  /**
+   * ONE effect owns the whole Block Step, so the two windows can never race each other for the
+   * idle mode: [On Your Opponent's Attack] first (blueprint section 5 puts it in the Attack Step,
+   * 7-1-1-3), then [Blocker] (7-1-2-1). Neither is a button any more — "Activate Blocker" was
+   * the same dead control as "[On Opponent's Attack]": clicking it only switched modes and left
+   * the player to guess which Character to tap.
+   */
   useEffect(() => {
     const battle = state?.currentBattle;
     if (!state || !battle || battle.step !== 'block') return;
     // A pending choice owns the board while it is up (same rule the donChoice / fieldChoice
     // effects above follow) — an ability that suspended mid-resolution must finish first.
     if (state.pendingChoices.length > 0) return;
-    if (skippedOnOppAttackWindowRef.current === onOppAttackWindowKey()) return;
 
-    const candidates = onOppAttackCandidateIds();
-    if (candidates.length === 0) {
-      if (mode.kind === 'selectOnOppAttackSource') reset();
+    // --- 1. [On Your Opponent's Attack] -------------------------------------
+    if (skippedOnOppAttackWindowRef.current !== onOppAttackWindowKey()) {
+      const sources = onOppAttackCandidateIds();
+      if (sources.length > 0) {
+        // Only ever open OVER idle. A player part-way through picking DON!! for one of these
+        // abilities is in 'payingOnOppAttackCost' and must not be yanked back to the picker.
+        if (mode.kind === 'idle') {
+          setMode({ kind: 'selectOnOppAttackSource', candidateInstanceIds: sources });
+          return;
+        }
+        if (mode.kind === 'selectOnOppAttackSource' && !sameOrder(mode.candidateInstanceIds, sources)) {
+          setMode({ kind: 'selectOnOppAttackSource', candidateInstanceIds: sources });
+        }
+        return;
+      }
+    }
+    // Nothing left to activate (or the player skipped): stand the window down so the Blocker
+    // window below can take the idle slot on the next pass.
+    if (mode.kind === 'selectOnOppAttackSource') {
+      reset();
       return;
     }
-    // Only ever open OVER idle. A player part-way through picking DON!! for one of these
-    // abilities is in 'payingOnOppAttackCost' and must not be yanked back to the picker.
+
+    // --- 2. [Blocker] --------------------------------------------------------
+    const blockers = blockerCandidateIds();
+    if (blockers.length === 0) {
+      if (mode.kind === 'selectBlocker') reset();
+      return;
+    }
     if (mode.kind === 'idle') {
-      setMode({ kind: 'selectOnOppAttackSource', candidateInstanceIds: candidates });
+      setMode({ kind: 'selectBlocker', candidateInstanceIds: blockers });
       return;
     }
-    if (
-      mode.kind === 'selectOnOppAttackSource' &&
-      (mode.candidateInstanceIds.length !== candidates.length ||
-        mode.candidateInstanceIds.some((id, index) => id !== candidates[index]))
-    ) {
-      setMode({ kind: 'selectOnOppAttackSource', candidateInstanceIds: candidates });
+    if (mode.kind === 'selectBlocker' && !sameOrder(mode.candidateInstanceIds, blockers)) {
+      setMode({ kind: 'selectBlocker', candidateInstanceIds: blockers });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, mode.kind]);
@@ -990,7 +1066,30 @@ export function useBoardSelection(actingPlayerId: string | null) {
     runDispatch(build(actingPlayerId));
   }
 
-  function playHandCard(card: CardView): void {
+  /**
+   * The Characters a play of `card` would have to replace (3-7-6-1), or [] when it fits.
+   *
+   * Deliberately the FIELD only, not the incoming card: the rules let you trash the Character you
+   * just played, but you cannot point at it before it exists, and a pre-selection UI that offers
+   * a card which is not on the mat reads as a bug. That line stays reachable through the engine's
+   * own overflow prompt on the paths that still raise it.
+   */
+  function characterReplaceCandidateIds(card: CardView): string[] {
+    if (!state || !actingPlayerId || card.category !== 'character') return [];
+    const area = state.players[actingPlayerId]?.characterArea;
+    if (!area) return [];
+    const limit = area.maxSize ?? Infinity;
+    return area.cardIds.length >= limit ? [...area.cardIds] : [];
+  }
+
+  /**
+   * The Character the pointer is currently over while a hand card is being dragged onto a full
+   * field. Lives here rather than in DockHand so the mat can ring it: the drag reads as "drop
+   * this ON that one to replace it" instead of a drop followed by a question.
+   */
+  const [dragReplaceTargetId, setDragReplaceTargetId] = useState<string | null>(null);
+
+  function playHandCard(card: CardView, replaceInstanceId?: string): void {
     if (!actingPlayerId || !state || mode.kind !== 'idle') return;
     if (card.category !== 'character' && card.category !== 'stage' && card.category !== 'event') return;
     const instance = state.cardsById[card.instanceId];
@@ -1027,7 +1126,12 @@ export function useBoardSelection(actingPlayerId: string | null) {
       return;
     }
 
-    if (cost === 0) {
+    // A full Character Area always needs the replacement decided first, so a 0-cost Character
+    // cannot take the straight-to-dispatch path below — there would be nowhere to make the pick.
+    const replaceCandidateIds = characterReplaceCandidateIds(card);
+    const preChosen = replaceInstanceId && replaceCandidateIds.includes(replaceInstanceId) ? replaceInstanceId : null;
+
+    if (cost === 0 && replaceCandidateIds.length === 0) {
       runDispatch({
         type: PLAY_ACTION_BY_CATEGORY[card.category],
         actionId: createActionId(),
@@ -1038,7 +1142,31 @@ export function useBoardSelection(actingPlayerId: string | null) {
       return;
     }
 
-    setMode({ kind: 'confirmPlayCost', handCardInstanceId: card.instanceId, cardCategory: card.category, cardName: card.name, cost, donInstanceIds });
+    setMode({
+      kind: 'confirmPlayCost',
+      handCardInstanceId: card.instanceId,
+      cardCategory: card.category,
+      cardName: card.name,
+      cost,
+      donInstanceIds,
+      replaceCandidateIds,
+      replaceInstanceId: preChosen,
+      replaceCardName: preChosen ? nameOfInstance(preChosen) : null,
+    });
+    setLastError(null);
+  }
+
+  /** Printed name of an in-play card, for confirm copy ("… Nami will be trashed"). */
+  function nameOfInstance(instanceId: string): string | null {
+    if (!state) return null;
+    const inst = state.cardsById[instanceId];
+    return (inst ? defs[inst.cardDefinitionId]?.name : undefined) ?? null;
+  }
+
+  /** Choose (or re-choose) which Character this play replaces. */
+  function pickReplaceTarget(instanceId: string): void {
+    if (mode.kind !== 'confirmPlayCost' || !mode.replaceCandidateIds.includes(instanceId)) return;
+    setMode({ ...mode, replaceInstanceId: instanceId, replaceCardName: nameOfInstance(instanceId) });
     setLastError(null);
   }
 
@@ -1070,19 +1198,22 @@ export function useBoardSelection(actingPlayerId: string | null) {
 
   // --- Mode entry points, called from ActionBar's mode-switch buttons ---
   const beginDeclareAttack = (): void => { setMode({ kind: 'selectAttacker' }); setLastError(null); };
-  const beginActivateBlocker = (): void => { setMode({ kind: 'selectBlocker' }); setLastError(null); };
   const beginActivateMain = (): void => { setMode({ kind: 'selectActivateSource' }); setLastError(null); };
   const cancel = (): void => { reset(); setLastError(null); };
 
   // --- Confirm steps for flows that collect a cost before dispatching ---
   function confirmPlayCard(): void {
     if (mode.kind !== 'confirmPlayCost' || mode.donInstanceIds.length !== mode.cost) return;
+    // A full field must have its replacement chosen — the engine refuses the play otherwise
+    // (3-7-6-1 would leave 6 Characters), so the button is disabled until this holds.
+    if (mode.replaceCandidateIds.length > 0 && !mode.replaceInstanceId) return;
     withActingPlayer((playerId) => ({
       type: PLAY_ACTION_BY_CATEGORY[mode.cardCategory],
       actionId: createActionId(),
       playerId,
       handCardInstanceId: mode.handCardInstanceId,
       donInstanceIds: mode.donInstanceIds,
+      ...(mode.replaceInstanceId ? { replaceInstanceId: mode.replaceInstanceId } : {}),
     }) as GameAction);
   }
 
@@ -1232,59 +1363,18 @@ export function useBoardSelection(actingPlayerId: string | null) {
           return;
         }
         if (!isOwnCard || zone !== 'hand') return;
-        if (card.category !== 'character' && card.category !== 'stage' && card.category !== 'event') return;
-        const cost = currentCostOf(card);
-        const eventPayment = card.category === 'event' ? mainEventDonPayment(card) : null;
-        if (cost === 0) {
-          if (card.category === 'event' && !eventPayment) {
-            const info = mainEventDonInfo(card);
-            if (info) {
-              setLastError([`${card.name} needs ${info.cost} active DON!! for its play cost` + (info.donMinus > 0 ? ` (then DON!! −${info.donMinus} after resting)` : '') + `, but only ${info.available} active DON!! are available.`]);
-              return;
-            }
-          }
-          withActingPlayer((playerId) => ({
-            type: PLAY_ACTION_BY_CATEGORY[card.category as 'character' | 'stage' | 'event'],
-            actionId: createActionId(),
-            playerId,
-            handCardInstanceId: card.instanceId,
-            donInstanceIds: [],
-          }) as GameAction);
-          return;
-        }
-        const donInstanceIds = eventPayment?.donInstanceIds ?? activeCostAreaDonIds(actingPlayerId).slice(0, cost);
-        if (donInstanceIds.length < cost) {
-          setLastError([`${card.name} costs ${cost} DON!!, but only ${donInstanceIds.length} active DON!! are available.`]);
-          return;
-        }
-        if (card.category === 'event' && !eventPayment) {
-          const info = mainEventDonInfo(card);
-          if (info) {
-            setLastError([`${card.name} needs ${info.cost} active DON!! for its play cost` + (info.donMinus > 0 ? ` (then DON!! −${info.donMinus} after resting)` : '') + `, but only ${info.available} active DON!! are available.`]);
-            return;
-          }
-        }
-        // v2 Events with DON!! −N still collect the return before dispatch.
-        if (card.category === 'event' && eventPayment && eventPayment.abilityCost > 0) {
-          setMode({
-            kind: 'payingEventMainCost',
-            handCardInstanceId: card.instanceId,
-            cardName: card.name,
-            cost,
-            donInstanceIds: eventPayment.donInstanceIds,
-            abilityCost: eventPayment.abilityCost,
-            candidateInstanceIds: eventPayment.candidateInstanceIds,
-            selectedDonIds: [],
-          });
-          setLastError(null);
-          return;
-        }
-        setMode({ kind: 'confirmPlayCost', handCardInstanceId: card.instanceId, cardCategory: card.category, cardName: card.name, cost, donInstanceIds });
-        setLastError(null);
+        // Was a second, hand-rolled copy of playHandCard's whole body (cost probe, DON!!
+        // availability errors, the Event DON!! -N branch, the confirm mode). One call instead:
+        // the copy would otherwise have to grow its own 3-7-6-1 replacement handling and drift
+        // from the real one the moment either changed.
+        playHandCard(card);
         return;
       }
 
       case 'confirmPlayCost': {
+        // The only thing tappable during a confirm is the Character this play replaces.
+        if (!isOwnCard || zone !== 'characterArea') return;
+        pickReplaceTarget(card.instanceId);
         return;
       }
 
@@ -1325,7 +1415,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
 
       case 'selectBlocker': {
         if (!isOwnCard || zone !== 'characterArea') return;
-        if (card.orientation !== 'active' || !card.hasBlocker) return;
+        if (!isBlockerEligible(card.instanceId)) return;
         withActingPlayer((playerId) => ({ type: 'ACTIVATE_BLOCKER', actionId: createActionId(), playerId, blockerInstanceId: card.instanceId }));
         return;
       }
@@ -1690,7 +1780,6 @@ export function useBoardSelection(actingPlayerId: string | null) {
   const stableFns = useStableDelegates({
     cancel,
     beginDeclareAttack,
-    beginActivateBlocker,
     beginActivateMain,
     skipOnOppAttackWindow,
     hasActivateMain,
@@ -1724,6 +1813,9 @@ export function useBoardSelection(actingPlayerId: string | null) {
     tapDonGroup,
     selectedDonCountIn,
     eligibleDonCountIn,
+    pickReplaceTarget,
+    characterReplaceCandidateIds,
+    setDragReplaceTargetId,
   });
 
   // The whole returned object is memoized too: `stableFns` never changes
@@ -1742,8 +1834,9 @@ export function useBoardSelection(actingPlayerId: string | null) {
       donChoiceProgress,
       fieldChoiceInfo,
       donSelectionBudgetNow,
+      dragReplaceTargetId,
       ...stableFns,
     }),
-    [mode, lastError, counterProgress, donChoiceProgress, fieldChoiceInfo, donSelectionBudgetNow, stableFns],
+    [mode, lastError, counterProgress, donChoiceProgress, fieldChoiceInfo, donSelectionBudgetNow, dragReplaceTargetId, stableFns],
   );
 }

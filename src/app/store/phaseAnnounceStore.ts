@@ -39,6 +39,7 @@
 import { create } from 'zustand';
 import type { TurnSequenceStep } from '../../animations/phaseAnnounce/types';
 import { useCardAnimationStore } from './cardAnimationStore';
+import { soundManager } from '../../audio';
 
 interface PhaseAnnounceStore {
   queue: TurnSequenceStep[];
@@ -50,10 +51,20 @@ interface PhaseAnnounceStore {
 // should ever read or render from.
 let drainTimer: ReturnType<typeof setTimeout> | null = null;
 
-/** Fires this step's card flights (if any) into cardAnimationStore — called exactly once, at the moment the step becomes the front of the queue. */
+/**
+ * Fires this step's card flights AND its sound cues — called exactly once, at
+ * the moment the step becomes the front of the queue. Sound is released here
+ * rather than at dispatch time for the same reason the flights are: one log
+ * delta routinely contains the whole Refresh -> Draw -> DON!! -> Main cascade.
+ * Cues run even with animations disabled (they are turn-flow feedback, not
+ * decoration — same rule as the banners themselves).
+ */
 function releaseStep(step: TurnSequenceStep): void {
   if (step.kind === 'phase' && step.movementSpecs.length > 0) {
     useCardAnimationStore.getState().enqueue(step.movementSpecs);
+  }
+  if (step.soundCues.length > 0) {
+    soundManager.playEvents(step.soundCues);
   }
 }
 

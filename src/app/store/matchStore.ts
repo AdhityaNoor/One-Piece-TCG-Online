@@ -41,6 +41,7 @@ import { buildAccessoriesByPlayer, buildCardDefinitionLookup, buildCardImageLook
 import { parseMovementSpecs } from '../../animations/cardMovement/parseLogEntries';
 import { applyMovementPresentation } from '../../animations/cardMovement/presentationHints';
 import { buildTurnSequence } from '../../animations/phaseAnnounce/buildTurnSequence';
+import { parseSoundCues, soundManager } from '../../audio';
 import { useSettingsStore } from './settingsStore';
 import { useCardAnimationStore } from './cardAnimationStore';
 import { usePhaseAnnounceStore } from './phaseAnnounceStore';
@@ -74,6 +75,16 @@ function presentLogDelta(
   }
   if (steps.length > 0) {
     usePhaseAnnounceStore.getState().enqueue(steps);
+  }
+
+  // Sound follows the SAME split. Cues for the mid-turn entries fire now;
+  // cues for a phase step are carried ON that step and released by
+  // phaseAnnounceStore at the moment the step becomes current, so a Draw
+  // Phase riffle can never play three banners early. Delays inside a batch
+  // are pre-computed by parseSoundCues to line up with the card flights.
+  const cueOptions = { localPlayerId, animationsEnabled };
+  if (preStepEntries.length > 0) {
+    soundManager.playEvents(parseSoundCues(prevState, preStepEntries, cueOptions));
   }
 }
 
@@ -476,6 +487,10 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   onlineSendIntent: null,
 
   startMatch(deckA, deckB, presentation, requestedDecidingPlayerId) {
+    // Pull the match cue set into memory now, while decks are still being
+    // validated — a cue whose asset is still downloading when its moment
+    // arrives is dropped rather than played late (audio/soundManager.ts).
+    void soundManager.preload('match');
     const p1Input = savedDeckToPlayerSetupInput(deckA, PLAYER_A_ID);
     const p2Input = savedDeckToPlayerSetupInput(deckB, PLAYER_B_ID);
     const defs = buildCardDefinitionLookup([deckA, deckB]);

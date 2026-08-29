@@ -87,7 +87,12 @@ export interface DockHandProps {
   /** Small overlay badge (e.g. a DON!! cost readout) rendered top-left of the card. */
   cardBadge?: (card: CardView) => ReactNode | null;
   onCardTap: (card: CardView) => void;
-  onPlayCard?: (card: CardView) => void;
+  /** `replaceInstanceId`: the own Character the drop landed on, when the play overflows (3-7-6-1). */
+  onPlayCard?: (card: CardView, replaceInstanceId?: string) => void;
+  /** Which of the player's own Characters `card` could replace if played now; [] when it fits. */
+  replaceTargetIdsFor?: (card: CardView) => string[];
+  /** Live during a drag, so the mat can ring the Character about to be replaced. */
+  onReplaceTargetHover?: (instanceId: string | null) => void;
   onCardZoom: (card: CardView) => void;
   /** When true the dock slides fully off screen (board is being interacted with). */
   boardFocused: boolean;
@@ -481,6 +486,8 @@ export const DockHand = memo(function DockHand({
   cardBadge,
   onCardTap,
   onPlayCard,
+  replaceTargetIdsFor,
+  onReplaceTargetHover,
   onCardZoom,
   boardFocused,
   cardWidthPx,
@@ -577,6 +584,9 @@ export const DockHand = memo(function DockHand({
   // was picked up.
   const [dragPointer, setDragPointer] = useState<{ x: number; y: number } | null>(null);
   const grabOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  // A ref, not state: the pointermove handler is registered once per drag (see the effect below)
+  // and would otherwise close over a stale value, and the drop needs the value synchronously.
+  const replaceHoverRef = useRef<string | null>(null);
   const [dropIntent, setDropIntent] = useState<'reorder' | 'play'>('reorder');
   // Host element for the "where this card will land" ghost — the acting
   // player's Character Area. Looked up from the DOM rather than threaded down
@@ -610,15 +620,32 @@ export const DockHand = memo(function DockHand({
       // the hand strip means "rearrange". The dragged card is pointer-events:
       // none while active (see DockHandCard), so this hit-test sees the board
       // underneath it rather than the card itself.
-      const overPlayZone = isOverPlayDropZone(document.elementFromPoint(event.clientX, event.clientY));
+      const hit = document.elementFromPoint(event.clientX, event.clientY);
+      const overPlayZone = isOverPlayDropZone(hit);
       setDropIntent(overPlayZone ? 'play' : 'reorder');
       if (overPlayZone) {
         const dragged = orderedCards.find((c) => c.instanceId === drag.instanceId);
         const zone = playDropZoneFor(dragged?.category);
         setPreviewHost(zone ? findPlayZoneHost(zone) : null);
+        // Which of your own Characters is under the pointer, when this play would overflow the
+        // Character Area. The dragged ghost is pointer-events:none (see DockHandCard), so this
+        // hit-test reaches the mat underneath rather than the card being dragged.
+        const replaceable = dragged ? replaceTargetIdsFor?.(dragged) ?? [] : [];
+        const overId = replaceable.length > 0
+          ? (hit as Element | null)?.closest('[data-card-instance-id]')?.getAttribute('data-card-instance-id') ?? null
+          : null;
+        const hovered = overId && replaceable.includes(overId) ? overId : null;
+        if (hovered !== replaceHoverRef.current) {
+          replaceHoverRef.current = hovered;
+          onReplaceTargetHover?.(hovered);
+        }
         return;
       }
       setPreviewHost(null);
+      if (replaceHoverRef.current !== null) {
+        replaceHoverRef.current = null;
+        onReplaceTargetHover?.(null);
+      }
 
       // Centres are measured live because the fan reflows after every swap.
       const currentOrder = orderedCards.map((c) => c.instanceId);
@@ -648,7 +675,14 @@ export const DockHand = memo(function DockHand({
 
       if (drag.moved && isOverPlayDropZone(document.elementFromPoint(event.clientX, event.clientY))) {
         const card = orderedCards.find((c) => c.instanceId === drag.instanceId);
-        if (card && (canPlay?.(card) ?? false)) onPlayCard?.(card);
+        // 3-7-6-1: dropping ONTO one of your own Characters while the area is full means "this
+        // one replaces that one". The hovered target travelled with the drag, so the play and
+        // the trash are decided in the same gesture.
+        if (card && (canPlay?.(card) ?? false)) onPlayCard?.(card, replaceHoverRef.current ?? undefined);
+      }
+      if (replaceHoverRef.current !== null) {
+        replaceHoverRef.current = null;
+        onReplaceTargetHover?.(null);
       }
     };
 
@@ -660,7 +694,7 @@ export const DockHand = memo(function DockHand({
       window.removeEventListener('pointerup', handleUp);
       window.removeEventListener('pointercancel', handleUp);
     };
-  }, [draggingId, orderedCards, canPlay, onPlayCard]);
+  }, [draggingId, orderedCards, canPlay, onPlayCard, replaceTargetIdsFor, onReplaceTargetHover]);
 
   const beginCardDrag = (instanceId: string, event: PointerEvent<HTMLDivElement>): void => {
     if (!isOwn) return;

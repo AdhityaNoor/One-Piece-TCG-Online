@@ -101,7 +101,7 @@ export function LandingScreen() {
             </div>
 
             <AuthCard>
-              <div className="flex gap-1 p-1.5">
+              <div className="flex gap-2.5 px-3 pb-1 pt-3">
                 <AuthTab active={!isSignup} onClick={() => goTo('login')}>
                   Sign In
                 </AuthTab>
@@ -120,7 +120,7 @@ export function LandingScreen() {
                 </p>
 
                 {!configured && (
-                  <p className="border-l-2 border-amber-300/70 bg-amber-500/10 p-3 text-[13px] leading-5 text-amber-100/90">
+                  <p className="rounded-2xl border border-amber-300/40 bg-amber-500/10 p-3.5 text-[13px] leading-5 text-amber-100/90">
                     Online play isn't configured for this build (no backend URL set). Set <code>VITE_API_BASE_URL</code>{' '}
                     to enable accounts, or continue offline for local play.
                   </p>
@@ -184,7 +184,7 @@ export function LandingScreen() {
                   </Field>
 
                   {isSignup && configured && (
-                    <fieldset className="mt-0.5 flex flex-col gap-2 border border-white/10 bg-black/25 p-3">
+                    <fieldset className="mt-0.5 flex flex-col gap-2 rounded-2xl border border-white/10 bg-black/25 p-3.5">
                       <legend className="px-1 font-heading text-[10px] font-black uppercase tracking-[0.18em] text-[rgb(var(--op-gold-rgb))]">
                         Before you join
                       </legend>
@@ -216,7 +216,7 @@ export function LandingScreen() {
                   )}
 
                   {error && (
-                    <p role="alert" className="border-l-2 border-red-400 bg-red-500/10 px-3 py-2 text-[13px] leading-5 text-red-200">
+                    <p role="alert" className="rounded-2xl border border-red-400/50 bg-red-500/10 px-3.5 py-2.5 text-[13px] leading-5 text-red-200">
                       {error}
                     </p>
                   )}
@@ -255,6 +255,10 @@ export function LandingScreen() {
  * punched into a bright, colourful backdrop. This is a lit navy with a gold hairline, a gold
  * accent bar along the top edge, and a soft outer glow, so it sits ON the art rather than
  * blocking it out.
+ *
+ * Corners are generously rounded (and every control inside follows) — the all-square
+ * treatment read as a generic template panel, and the shape now echoes the rounded
+ * parallelogram tabs sitting on it.
  */
 function AuthCard({ children }: { children: ReactNode }) {
   return (
@@ -263,8 +267,10 @@ function AuthCard({ children }: { children: ReactNode }) {
         aria-hidden="true"
         className="pointer-events-none absolute -inset-6 bg-[radial-gradient(ellipse_at_center,_rgb(var(--op-gold-rgb)/0.22),_transparent_70%)] blur-2xl"
       />
-      <div className="relative overflow-hidden border border-[rgb(var(--op-gold-rgb)/0.55)] bg-gradient-to-b from-[#1a2d78] via-[#101b48] to-[#080e28] shadow-[0_22px_60px_rgba(0,0,0,0.65)]">
-        <div aria-hidden="true" className="h-[3px] w-full bg-gradient-to-r from-transparent via-[rgb(var(--op-gold-rgb))] to-transparent" />
+      <div className="relative overflow-hidden rounded-[1.75rem] border border-[rgb(var(--op-gold-rgb)/0.55)] bg-gradient-to-b from-[#1a2d78] via-[#101b48] to-[#080e28] shadow-[0_22px_60px_rgba(0,0,0,0.65)]">
+        {/* Inset above the rounded corners so the accent reads as a bar, not as two
+            slivers clipped off by the corner radius. */}
+        <div aria-hidden="true" className="mx-auto h-[3px] w-[72%] rounded-full bg-gradient-to-r from-transparent via-[rgb(var(--op-gold-rgb))] to-transparent" />
         {/* Top sheen — stops the large flat fill from looking like dead space. */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/[0.07] to-transparent" />
         <div className="relative">{children}</div>
@@ -273,7 +279,17 @@ function AuthCard({ children }: { children: ReactNode }) {
   );
 }
 
-/** Segmented Sign In / Sign Up switch — replaces the easily-missed 11px text link. */
+/**
+ * Segmented Sign In / Sign Up switch, in the game's parallelogram button shape.
+ *
+ * The SKEW LIVES ON A BACKGROUND SPAN, not on the button: skewing the button
+ * itself would drag the label with it (Button.tsx has to counter-skew its own
+ * text for exactly this reason), and a counter-skewed label re-introduces the
+ * blurry-glyph problem on a 12px uppercase tracking-heavy word. The frame is
+ * softly rounded so the sharp parallelogram points don't fight the rounded card
+ * The shape itself stays the app's sharp -skew-x-12 parallelogram, identical to
+ * Button.tsx / the main-menu tabs — only the panel and the inputs are rounded.
+ */
 function AuthTab({
   active,
   disabled,
@@ -292,15 +308,23 @@ function AuthTab({
       disabled={disabled}
       aria-pressed={active}
       className={[
-        'flex-1 border px-3 py-2.5 font-heading text-xs font-black uppercase tracking-[0.14em] transition',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--op-gold-rgb))]',
-        active
-          ? 'border-[rgb(var(--op-gold-rgb)/0.8)] bg-[rgb(var(--op-gold-rgb)/0.16)] text-white shadow-[inset_0_-2px_0_rgb(var(--op-gold-rgb))]'
-          : 'border-white/12 bg-black/20 text-white/55 hover:border-white/30 hover:text-white/85',
+        'group relative flex-1 select-none px-3 py-2.5 font-heading text-xs font-black uppercase tracking-[0.14em]',
+        'transition-colors duration-200 focus:outline-none',
+        active ? 'text-white' : 'text-white/55 hover:text-white/90',
         disabled ? 'cursor-not-allowed opacity-40' : '',
       ].join(' ')}
     >
-      {children}
+      <span
+        aria-hidden="true"
+        className={[
+          'absolute inset-0 -skew-x-12 border transition-all duration-200',
+          'group-focus-visible:ring-2 group-focus-visible:ring-[rgb(var(--op-gold-rgb))] group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[#101b48]',
+          active
+            ? 'border-[rgb(var(--op-gold-rgb)/0.85)] bg-[rgb(var(--op-gold-rgb)/0.18)] shadow-[0_8px_22px_-6px_rgb(var(--op-gold-rgb)/0.55)]'
+            : 'border-white/15 bg-black/25 group-hover:border-white/30 group-hover:bg-black/15',
+        ].join(' ')}
+      />
+      <span className="relative z-10 block">{children}</span>
     </button>
   );
 }
@@ -323,7 +347,7 @@ function TermCheckbox({
       <span
         aria-hidden="true"
         className={[
-          'mt-[0.15rem] flex h-5 w-5 flex-shrink-0 items-center justify-center border text-[11px] font-black transition',
+          'mt-[0.15rem] flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border text-[11px] font-black transition',
           'peer-focus-visible:ring-2 peer-focus-visible:ring-[rgb(var(--op-gold-rgb))]',
           checked
             ? 'border-[rgb(var(--op-gold-rgb))] bg-[rgb(var(--op-gold-rgb))] text-black'
@@ -355,7 +379,7 @@ function StartButton({ onClick }: { onClick: () => void }) {
 
 const inputClass =
   // Lifted off pure black: the old `bg-[#050a14]/95` inputs read as holes in the panel.
-  'h-11 w-full border border-white/20 bg-white/[0.07] px-3 text-sm text-white placeholder:text-white/30 outline-none transition ' +
+  'h-11 w-full rounded-xl border border-white/20 bg-white/[0.07] px-3.5 text-sm text-white placeholder:text-white/30 outline-none transition ' +
   'hover:border-white/35 focus:border-[rgb(var(--op-gold-rgb))] focus:bg-white/[0.1] focus:ring-2 focus:ring-[rgb(var(--op-gold-rgb)/0.35)] ' +
   'disabled:cursor-not-allowed disabled:opacity-40';
 

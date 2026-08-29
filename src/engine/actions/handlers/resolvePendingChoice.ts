@@ -17,6 +17,7 @@ import type { GameState } from '../../state/game';
 import type { ResolvePendingChoiceAction, ValidationResult } from '../action';
 import { createActionLogger } from '../../rules/shared/actionLogger';
 import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
+import { trashForCharacterAreaLimit } from '../../rules/shared/characterAreaOverflow';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import { resumeChoice, fireLifeTrigger, fireOnKO, fireTriggerActivatedReactions, type EffectTemplateRegistry } from '../../effects';
 import { finishBattleAfterKoDecision } from '../../rules/battle/damageStep';
@@ -245,25 +246,11 @@ export function executeResolvePendingChoice(
   const remainingChoices = state.pendingChoices.filter((c) => c.id !== action.choiceId);
 
   if (choice.sourceEffectId === 'rule:characterAreaOverflow') {
-    const player = state.players[action.playerId];
     const [chosenId] = action.response as string[];
 
-    const cardsById = {
-      ...state.cardsById,
-      [chosenId]: { ...state.cardsById[chosenId], currentZone: 'trash' as const, donAttached: [] },
-    };
-    const newCharacterArea = removeFromZone(player.characterArea, chosenId);
-    const newTrash = addToZoneTop(player.trash, chosenId);
-    const newPlayer = { ...player, characterArea: newCharacterArea, trash: newTrash };
+    // Same move the pre-named path in playCharacter.ts makes — shared so the two cannot drift.
+    const trimmed = trashForCharacterAreaLimit(state, action.playerId, chosenId, logger);
 
-    logger.push({
-      actorPlayerId: action.playerId,
-      type: 'CARD_MOVED',
-      message: `${action.playerId} trashed '${chosenId}' to satisfy the Character Area limit (3-7-6-1).`,
-      data: { from: 'characterArea', to: 'trash' },
-      relatedCardInstanceIds: [chosenId],
-      visibility: 'public',
-    });
     logger.push({
       actorPlayerId: action.playerId,
       type: 'CHOICE_RESOLVED',
@@ -274,9 +261,7 @@ export function executeResolvePendingChoice(
     });
 
     const nextState: GameState = {
-      ...state,
-      cardsById,
-      players: { ...state.players, [action.playerId]: newPlayer },
+      ...trimmed,
       pendingChoices: remainingChoices,
       log: [...state.log, ...logger.log],
     };

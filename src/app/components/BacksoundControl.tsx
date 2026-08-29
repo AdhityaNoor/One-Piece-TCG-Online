@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSettingsStore } from '../store/settingsStore';
+import { playCue, resolveClickCue } from '../../audio';
 import {
   SETTINGS_PANEL_ICON_BUTTON,
   SETTINGS_PANEL_LABEL,
@@ -14,7 +15,6 @@ import {
 } from './settingsPanelStyles';
 
 const BACKSOUND_SRC = '/audio/main-menu-backsound.mp3';
-const UI_CLICK_SRC = '/audio/ui-click.wav';
 
 function SpeakerIcon({ muted }: { muted: boolean }) {
   return (
@@ -132,7 +132,6 @@ const BUTTON_CLASS: Record<SettingsVariant, string> = {
 export function BacksoundControl({ className }: { className?: string } = {}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const sfxRef = useRef<HTMLAudioElement>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [host, setHost] = useState<SettingsHost | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -222,12 +221,6 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
     audio.volume = backsoundVolume;
   }, [backsoundVolume]);
 
-  useEffect(() => {
-    const sfx = sfxRef.current;
-    if (!sfx) return;
-    sfx.volume = sfxVolume;
-  }, [sfxVolume]);
-
   async function toggleFullscreen(): Promise<void> {
     if (pseudoFullscreen) {
       setPseudoFullscreen(false);
@@ -316,29 +309,25 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
       .catch(() => setPlaybackBlocked(true));
   };
 
+  // One delegated listener covers every control in the app. Which cue a
+  // control makes is decided by resolveClickCue (audio/uiCues.ts) — a
+  // component overrides it with data-sfx="ui.back" or silences itself with
+  // data-sfx="none" rather than wiring its own handler. Volume/mute are
+  // applied by the audio layer's bus gains, so nothing is read here.
   useEffect(() => {
     const playClickSfx = (event: MouseEvent) => {
-      if (!sfxEnabled) return;
-
       const target = event.target instanceof Element ? event.target : null;
-      const control = target?.closest('button, a, [role="button"]');
+      const control = target?.closest('button, a, [role="button"], [role="switch"], [role="tab"]');
       if (!control || control.getAttribute('aria-disabled') === 'true') return;
       if (control instanceof HTMLButtonElement && control.disabled) return;
 
-      const sfx = sfxRef.current;
-      if (!sfx) return;
-
-      sfx.pause();
-      sfx.currentTime = 0;
-      sfx.volume = sfxVolume;
-      sfx.play().catch(() => {
-        // Browsers may block audio until the first user gesture; clicks will retry naturally.
-      });
+      const cue = resolveClickCue(control);
+      if (cue) playCue(cue);
     };
 
     document.addEventListener('click', playClickSfx);
     return () => document.removeEventListener('click', playClickSfx);
-  }, [sfxEnabled, sfxVolume]);
+  }, []);
 
   const variant: SettingsVariant = host?.variant ?? 'floating';
   const control = (
@@ -357,7 +346,6 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
         }}
         onPause={() => setIsPlaying(false)}
       />
-      <audio ref={sfxRef} src={UI_CLICK_SRC} preload="auto" />
 
       {panelOpen && (
         <div className={`w-64 p-3 ${SETTINGS_PANEL_SHELL} ${PANEL_CLASS[variant]}`}>
@@ -408,7 +396,10 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
                 max="1"
                 step="0.05"
                 value={sfxVolume}
-                onChange={(event) => setSfxVolume(Number(event.target.value))}
+                onChange={(event) => {
+                setSfxVolume(Number(event.target.value));
+                playCue('ui.slider.tick');
+              }}
                 className="h-1 flex-1 accent-white"
                 aria-label="Sound effects volume"
               />

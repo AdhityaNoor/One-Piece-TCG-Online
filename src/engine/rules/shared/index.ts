@@ -9,3 +9,4 @@ export * from './emptyDeckDefeat';
 export * from './dealLifeDamage';
 export * from './lifeToHandRestriction';
 export * from './lifeLeaveDestination';
+export * from './characterAreaOverflow';

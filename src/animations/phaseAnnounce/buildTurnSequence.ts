@@ -3,6 +3,7 @@ import type { GameState } from '../../engine/state/game';
 import { parseMovementSpecs } from '../cardMovement/parseLogEntries';
 import { applyMovementPresentation } from '../cardMovement/presentationHints';
 import { FLIGHT_MS } from '../cardMovement/types';
+import { parseSoundCues } from '../../audio/matchCues';
 import type { AnnouncedPhase, TurnSequenceStep } from './types';
 
 const PHASE_LABELS: Record<AnnouncedPhase, string> = {
@@ -89,14 +90,30 @@ export function buildTurnSequence(
   if (refreshIdx !== -1) {
     if (turnPassedEntry && turnPassedEntry.actorPlayerId) {
       const turnNumber = typeof turnPassedEntry.data.turnNumber === 'number' ? turnPassedEntry.data.turnNumber : prevState.turnNumber + 1;
-      steps.push({ kind: 'turnChange', id: turnPassedEntry.id, playerId: turnPassedEntry.actorPlayerId, turnNumber, durationMs: TURN_CHANGE_MS });
+      steps.push({
+        kind: 'turnChange',
+        id: turnPassedEntry.id,
+        playerId: turnPassedEntry.actorPlayerId,
+        turnNumber,
+        soundCues: parseSoundCues(prevState, [turnPassedEntry], { localPlayerId, animationsEnabled }),
+        durationMs: TURN_CHANGE_MS,
+      });
     } else {
       // No TURN_PASSED but a cascade still ran -> this is turn 1 (mulligan-driven), which never
       // hands off from a previous player. Attribute it to whoever the cascade's own first marker
       // belongs to, read below once we know it, rather than guessing here.
       const firstMarker = logDelta[refreshIdx];
       if (firstMarker.actorPlayerId) {
-        steps.push({ kind: 'turnChange', id: `${firstMarker.id}-turn`, playerId: firstMarker.actorPlayerId, turnNumber: prevState.turnNumber, durationMs: TURN_CHANGE_MS });
+        steps.push({
+          kind: 'turnChange',
+          id: `${firstMarker.id}-turn`,
+          playerId: firstMarker.actorPlayerId,
+          turnNumber: prevState.turnNumber,
+          // Turn 1 has no TURN_PASSED to derive a "your turn" cue from, so it
+          // is synthesized from whose cascade this is.
+          soundCues: [{ cueId: firstMarker.actorPlayerId === localPlayerId ? 'turn.begin.you' : 'turn.begin.opponent', delayMs: 0 }],
+          durationMs: TURN_CHANGE_MS,
+        });
       }
     }
   }
@@ -143,6 +160,7 @@ export function buildTurnSequence(
       label: PHASE_LABELS[marker.phase],
       detail: detailFor(marker.phase, marker.entry),
       movementSpecs: rawSpecs,
+      soundCues: parseSoundCues(prevState, segment, { localPlayerId, animationsEnabled }),
       durationMs,
     });
   }
@@ -156,6 +174,8 @@ export function buildTurnSequence(
       label: PHASE_LABELS.main,
       detail: null,
       movementSpecs: [],
+      // Main is synthesized (no PHASE_CHANGED marks it) so its banner cue is too.
+      soundCues: [{ cueId: 'phase.main', delayMs: 0 }],
       durationMs: READ_MS,
     });
   }

@@ -25,7 +25,7 @@ import type { CardDefinition } from '../../engine/state/card';
 import type { GameState } from '../../engine/state/game';
 import type { GameLogEntry } from '../../engine/logs/logEntry';
 import type { MatchModeTag } from '../../../shared/support';
-import { countAvailableDon, getActingPlayerId, projectPlayerBoard } from '../../board/projection';
+import { countAvailableDon, getActingPlayerId, getGlowPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
 import { Button, CardDetailModal, CardImage, GlitterWrap, Modal, ScaleToFit } from '../components';
 import {
@@ -39,6 +39,8 @@ import {
   fieldChoiceDimmed,
   fieldChoiceSelected,
   leaderCharacterSelectable,
+  promptHighlighted,
+  replaceTargetSelected,
   MatchAccessoriesProvider,
   MatchChatPanel,
   PendingChoicePrompt,
@@ -660,6 +662,12 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const bottomPlayerId = bottomPlayerIdSafe;
   const topPlayerId = topPlayerIdSafe;
 
+  // Which mat lights up as "the playing side". The rule differs by mode and
+  // is quietly easy to get wrong — a turn-player light is a no-op on the
+  // flipping hotseat board, where the bottom seat IS the turn player — so it
+  // lives in board/projection with tests rather than as a ternary here.
+  const glowPlayerId = getGlowPlayerId(matchState, localPlayerId);
+
   // Action AUTHORITY (who may currently act, and whose hand/board ActionBar
   // should read for eligibility checks) still tracks getActingPlayerId() —
   // only the panels' on-screen position was the bug, not this.
@@ -1011,10 +1019,12 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                   isOwn={isPinnedPerspective ? false : actingPlayerId === topPlayerId}
                   isOpponent={isPinnedPerspective ? true : actingPlayerId !== topPlayerId}
                   reverseRows={true}
+                  isActiveSide={glowPlayerId === topPlayerId}
                   mode={selection.mode}
                   canActivateCard={selection.hasActivateMain}
                   canOnOppAttackCard={selection.hasOnOpponentsAttack}
                   canAttackCard={selection.canDeclareAttackWith}
+                  dragReplaceTargetId={selection.dragReplaceTargetId}
                   battlePowerInstanceIds={battlePowerInstanceIds}
                   onMatCardTap={selection.handleCardTap}
                   onMatCardAttack={selection.beginAttackWithCard}
@@ -1046,10 +1056,12 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                   isOwn={isPinnedPerspective ? true : actingPlayerId === bottomPlayerId}
                   isOpponent={isPinnedPerspective ? false : actingPlayerId !== bottomPlayerId}
                   reverseRows={false}
+                  isActiveSide={glowPlayerId === bottomPlayerId}
                   mode={selection.mode}
                   canActivateCard={selection.hasActivateMain}
                   canOnOppAttackCard={selection.hasOnOpponentsAttack}
                   canAttackCard={selection.canDeclareAttackWith}
+                  dragReplaceTargetId={selection.dragReplaceTargetId}
                   battlePowerInstanceIds={battlePowerInstanceIds}
                   onMatCardTap={selection.handleCardTap}
                   onMatCardAttack={selection.beginAttackWithCard}
@@ -1101,6 +1113,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               cardBadge={topHandCallbacks.cardBadge}
               onCardTap={topHandCallbacks.onCardTap}
               onPlayCard={selection.playHandCard}
+              replaceTargetIdsFor={selection.characterReplaceCandidateIds}
+              onReplaceTargetHover={selection.setDragReplaceTargetId}
               onCardZoom={openZoom}
               boardFocused={handsHidden}
               forceOpen={handToggleHovered && !handsHidden}
@@ -1118,6 +1132,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               cardBadge={bottomHandCallbacks.cardBadge}
               onCardTap={bottomHandCallbacks.onCardTap}
               onPlayCard={selection.playHandCard}
+              replaceTargetIdsFor={selection.characterReplaceCandidateIds}
+              onReplaceTargetHover={selection.setDragReplaceTargetId}
               onCardZoom={openZoom}
               boardFocused={handsHidden}
               forceOpen={handToggleHovered && !handsHidden}
@@ -2238,14 +2254,15 @@ function MobileCardZone({
         selectable={mode.kind !== 'idle' && selectable}
         // Field-choice picks get the same selected ring the desktop mat draws,
         // so a multi-card selection is readable on mobile too.
-        selected={attackerSelected || fieldChoiceSelected(mode, card)}
+        selected={attackerSelected || fieldChoiceSelected(mode, card) || replaceTargetSelected(mode, card)}
         // "Dim, don't hide" the cards a field choice can't target, so the
         // eligible one stands out on the mat — same call the desktop mat makes.
         dimmed={fieldChoiceDimmed(mode, card, selectable)}
         activatable={mode.kind === 'idle' && canActivate}
-        // The [On Your Opponent's Attack] window asks the player to pick one of these — the ring
-        // is what makes the eligible cards findable on a phone-sized mat.
-        highlighted={mode.kind === 'selectOnOppAttackSource' && selectable}
+        // The Block-Step windows ([On Your Opponent's Attack], then [Blocker]) ask the player to
+        // pick one of these — the ring is what makes the eligible cards findable on a
+        // phone-sized mat.
+        highlighted={promptHighlighted(mode, selectable)}
         attackable={mode.kind === 'idle' && canAttack}
         showBattlePower={battlePowerInstanceIds.has(card.instanceId)}
         attachedDonSelectable={attachedDonSelectable}
@@ -3125,6 +3142,7 @@ function PlayerSideRow({
   isOwn,
   isOpponent,
   reverseRows,
+  isActiveSide,
   mode,
   onMatCardTap,
   onMatCardAttack,
@@ -3134,6 +3152,7 @@ function PlayerSideRow({
   canActivateCard,
   canOnOppAttackCard,
   canAttackCard,
+  dragReplaceTargetId,
   battlePowerInstanceIds,
   boardFocused,
   canGiveDonOnCard,
@@ -3154,8 +3173,11 @@ function PlayerSideRow({
   canActivateCard: (card: CardView) => boolean;
   canOnOppAttackCard: (card: CardView) => boolean;
   canAttackCard: (card: CardView) => boolean;
+  /** Character the pointer is over while a hand card is dragged onto a full field (3-7-6-1). */
+  dragReplaceTargetId: string | null;
   battlePowerInstanceIds: Set<string>;
   boardFocused: boolean;
+  isActiveSide: boolean;
   canGiveDonOnCard: (board: PlayerBoardView, card: CardView) => boolean;
   onGiveDon: (board: PlayerBoardView, card: CardView) => void;
   onReturnGivenDon: (card: CardView) => void;
@@ -3168,10 +3190,12 @@ function PlayerSideRow({
         isOwn={isOwn}
         isOpponent={isOpponent}
         reverseRows={reverseRows}
+        isActiveSide={isActiveSide}
         mode={mode}
         canActivateCard={canActivateCard}
         canOnOppAttackCard={canOnOppAttackCard}
         canAttackCard={canAttackCard}
+        dragReplaceTargetId={dragReplaceTargetId}
         battlePowerInstanceIds={battlePowerInstanceIds}
         boardFocused={boardFocused}
         onCardTap={onMatCardTap}

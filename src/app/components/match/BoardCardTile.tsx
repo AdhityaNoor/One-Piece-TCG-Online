@@ -21,6 +21,26 @@ const SIZE_PX: Record<BoardCardTileSize, { width: string; box: string }> = {
   field: { width: cqh(150), box: cqh(210) },
 };
 
+/**
+ * The prompt glow, in the same two-layer form the active playmat uses (a tight
+ * ring, then a soft halo thrown outward) so "the game is waiting on this" reads
+ * as one visual idea wherever it appears. Blue for your own cards, red for the
+ * opponent's.
+ *
+ * The innermost layer is a dark 1.5px separator, and it is what makes this work
+ * at all: the mat underneath is washed in its own Leader's colour, so a red
+ * halo on a red Leader's mat and a blue one on a blue Leader's mat both sink
+ * straight into the background without it. Checked against all six.
+ *
+ * Written as whole literal class strings rather than composed from parts:
+ * Tailwind only emits classes it can find verbatim in the source, so a name
+ * built at runtime produces no CSS at all and the glow silently vanishes.
+ */
+const HIGHLIGHT_TONE: Record<'own' | 'opponent', string> = {
+  own: 'shadow-[0_0_0_1.5px_rgba(0,0,0,0.65),0_0_0_4px_rgb(125,211,252),0_0_20px_7px_rgba(56,189,248,0.75)]',
+  opponent: 'shadow-[0_0_0_1.5px_rgba(0,0,0,0.65),0_0_0_4px_rgb(253,164,175),0_0_20px_7px_rgba(244,63,94,0.80)]',
+};
+
 export interface BoardCardTileProps {
   card: CardView;
   size?: BoardCardTileSize;
@@ -37,6 +57,14 @@ export interface BoardCardTileProps {
    * on you to pick one of these". Gets its own ring so the two never read as the same state.
    */
   highlighted?: boolean;
+  /**
+   * Whose card this is, from the perspective of the player being asked to
+   * choose. Only read while `highlighted` — it colours the prompt glow so a
+   * field choice spanning BOTH boards ("K.O. up to 1 of your opponent's
+   * Characters") says at a glance which side each candidate sits on, without
+   * the player having to trace it back to a half of the mat.
+   */
+  highlightTone?: 'own' | 'opponent';
   attackable?: boolean;
   showBattlePower?: boolean;
   attachedDonSelectable?: boolean;
@@ -320,6 +348,7 @@ export function BoardCardTile({
   dimmed = false,
   activatable,
   highlighted,
+  highlightTone = 'own',
   attackable,
   showBattlePower,
   attachedDonSelectable,
@@ -435,7 +464,7 @@ export function BoardCardTile({
               selected
                 ? 'ring-2 ring-amber-300'
                 : highlighted
-                  ? 'ring-4 ring-cyan-300 shadow-[0_0_28px_rgba(103,232,249,0.6)] animate-pulse'
+                  ? `${HIGHLIGHT_TONE[highlightTone]} animate-pulse`
                   : activatable
                     ? 'ring-2 ring-emerald-400'
                     : attackable

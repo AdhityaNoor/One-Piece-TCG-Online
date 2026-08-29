@@ -21,6 +21,7 @@ import { computeCurrentCost, consumablePlayFromHandCostDiscountIds, mustPlayChar
 import { isControllerCharacterPlayPrevented } from '../../rules/shared/characterPlayRestriction';
 import { isControllerHandPlayPrevented } from '../../rules/shared/handPlayRestriction';
 import { mintRuntimeInstanceId } from '../../rules/shared/mintInstance';
+import { trashForCharacterAreaLimit } from '../../rules/shared/characterAreaOverflow';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import { fireOnPlay, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, resolveEffectProgram, type EffectTemplateRegistry } from '../../effects';
 
@@ -98,6 +99,19 @@ export function validatePlayCharacter(
     }
   }
 
+  if (action.replaceInstanceId !== undefined) {
+    // Only meaningful when this play actually overflows the area (3-7-6-1). Without this check
+    // the field would be a free "trash any of my own Characters" button attached to every play.
+    const limit = player.characterArea.maxSize ?? Infinity;
+    if (player.characterArea.cardIds.length < limit) {
+      reasons.push(`replaceInstanceId was supplied, but ${action.playerId}'s Character Area is not full — nothing needs replacing (3-7-6-1).`);
+    }
+    const replaced = state.cardsById[action.replaceInstanceId];
+    if (!replaced || replaced.controllerId !== action.playerId || !player.characterArea.cardIds.includes(action.replaceInstanceId)) {
+      reasons.push(`'${action.replaceInstanceId}' is not one of ${action.playerId}'s Characters in play.`);
+    }
+  }
+
   return { legal: reasons.length === 0, reasons };
 }
 
@@ -158,13 +172,26 @@ export function executePlayCharacter(
   });
 
   const pendingChoices: PendingChoice[] = [];
-  if (newCharacterArea.cardIds.length > (newCharacterArea.maxSize ?? Infinity)) {
+  const overflows = newCharacterArea.cardIds.length > (newCharacterArea.maxSize ?? Infinity);
+  // The player named the replacement before committing the DON!!, so there is nothing to ask.
+  // The trash itself is applied at the very END of this handler, not here — see below.
+  const preChosenReplacement = overflows && action.replaceInstanceId !== undefined ? action.replaceInstanceId : null;
+  if (overflows && preChosenReplacement === null) {
     const choice: PendingChoice = {
       id: `${action.playerId}__character-overflow-${action.actionId}`,
       playerId: action.playerId,
       kind: 'SELECT_CARDS',
       prompt: `Choose 1 Character to trash — more than ${newCharacterArea.maxSize} in your Character Area (3-7-6-1).`,
-      constraints: { min: 1, max: 1, zoneId: 'characterArea', filterDescription: 'Any Character currently in your Character Area.' },
+      constraints: {
+        min: 1,
+        max: 1,
+        zoneId: 'characterArea',
+        filterDescription: 'Any Character currently in your Character Area.',
+        // Without this the board's field-card picker (isFieldCardChoice needs a non-empty
+        // candidate list) never triggered and the choice fell through to a modal card gallery —
+        // a popup listing cards the player is already looking at on the mat.
+        candidateInstanceIds: [...newCharacterArea.cardIds],
+      },
       sourceInstanceId: null,
       sourceEffectId: 'rule:characterAreaOverflow',
     };
@@ -188,23 +215,42 @@ export function executePlayCharacter(
     log: [...state.log, ...logger.log],
   };
 
+  /**
+   * Applies a pre-named 3-7-6-1 replacement, and does it LAST — after [On Play] and the reactive
+   * sweeps have run. That is not an implementation detail, it is what keeps this path
+   * behaviourally identical to the PendingChoice path: there, the choice sits at index 0 of
+   * pendingChoices, so [On Play] has already RESOLVED (against a board still holding the 6th
+   * Character) by the time the player answers and the trash lands. Trashing earlier here would
+   * silently change what an [On Play] that counts or targets your Characters sees.
+   */
+  const finish = (result: ActionExecuteResult): ActionExecuteResult => {
+    if (preChosenReplacement === null) return result;
+    const trashLogger = createActionLogger(result.state, action.actionId);
+    const trimmed = trashForCharacterAreaLimit(result.state, action.playerId, preChosenReplacement, trashLogger);
+    return {
+      ...result,
+      state: { ...trimmed, log: [...trimmed.log, ...trashLogger.log] },
+      log: [...result.log, ...trashLogger.log],
+    };
+  };
+
   // [On Play] (8-1-3-1) fires now that the Character has resolved into play.
   // No-op when the card has no authored template — see effects/fireTiming.ts.
   const fired = fireOnPlay(nextState, newInstanceId, registry, defs, action.actionId);
   if (fired.pendingChoices.length > 0) {
-    return {
+    return finish({
       state: withConsumedPlayFromHandCostDiscounts(fired.state, consumedDiscountIds),
       log: [...logger.log, ...fired.log],
       pendingChoices: [...pendingChoices, ...fired.pendingChoices],
-    };
+    });
   }
   const reactive = fireCharacterPlayedFromHandReactions(fired.state, action.playerId, newInstanceId, registry, defs, action.actionId);
   if (reactive.pendingChoices.length > 0) {
-    return {
+    return finish({
       state: withConsumedPlayFromHandCostDiscounts(reactive.state, consumedDiscountIds),
       log: [...logger.log, ...fired.log, ...reactive.log],
       pendingChoices: [...pendingChoices, ...reactive.pendingChoices],
-    };
+    });
   }
   const opponentReactive = fireOpponentCharacterPlayedFromHandReactions(
     reactive.state,
@@ -215,9 +261,9 @@ export function executePlayCharacter(
     defs,
     action.actionId,
   );
-  return {
+  return finish({
     state: withConsumedPlayFromHandCostDiscounts(opponentReactive.state, consumedDiscountIds),
     log: [...logger.log, ...fired.log, ...reactive.log, ...opponentReactive.log],
     pendingChoices: [...pendingChoices, ...opponentReactive.pendingChoices],
-  };
+  });
 }
