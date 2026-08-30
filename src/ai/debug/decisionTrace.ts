@@ -8,6 +8,8 @@ export interface DecisionTrace {
   utility: number;
   lethalProbability: number;
   survivalRisk: number;
+  /** How many legal actions the seat had — 1 means "only END_MAIN was legal". */
+  generated: number;
   topActions: Array<{ label: string; score: number; trace?: string[] }>;
   chosen: { label: string; score: number };
   elapsedMs: number;
@@ -28,6 +30,7 @@ export function buildDecisionTrace(
     utility: strategic.objective.utility,
     lethalProbability: strategic.objective.currentLethalProbability,
     survivalRisk: strategic.survival.immediateLossRisk,
+    generated: scored.length,
     topActions: sorted.map((s) => ({
       label: s.label,
       score: s.score,
@@ -40,7 +43,7 @@ export function buildDecisionTrace(
 
 export function logDecisionTrace(trace: DecisionTrace): void {
   if (typeof console === 'undefined') return;
-  console.group(`CPU Strategy [${trace.mode} / ${trace.gamePhase}]`);
+  console.group(`CPU Strategy [${trace.mode} / ${trace.gamePhase}] — ${trace.generated} legal action(s)`);
   console.log(`Leader: ${trace.leader}`);
   console.log(`Utility: ${trace.utility.toFixed(1)} | Lethal: ${trace.lethalProbability.toFixed(0)}% | Survival risk: ${(trace.survivalRisk * 100).toFixed(0)}%`);
   for (const entry of trace.topActions) {

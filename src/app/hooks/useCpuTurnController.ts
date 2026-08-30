@@ -84,15 +84,27 @@ export function useCpuTurnController(enabled: boolean): { thinking: boolean } {
             createActionId,
           });
         } catch (err) {
-          if (latest.cpuDebug) console.warn('[CPU] chooseAction threw:', err);
+          /**
+           * ALWAYS loud, not just under cpuDebug.
+           *
+           * A throw here is swallowed and the fallback below quietly ends the
+           * CPU's turn, so a genuine crash presents as "the AI is just being
+           * passive" — indistinguishable from a bad evaluation. That disguise
+           * hid a stack overflow in effectValue.ts that fired on 112 cards and
+           * made the CPU pass its turn whenever it held one of them. It took a
+           * headless harness to find something a single console.error would
+           * have named immediately.
+           */
+          console.error('[CPU] chooseAction threw — the CPU will fall back to ending its turn:', err);
         }
 
         let action = decision?.action ?? null;
         if (!action) {
           action = fallbackProgressAction(liveState, liveActing);
-          if (latest.cpuDebug) {
-            console.warn('[CPU] no scored action for', liveActing, '— using fallback', action?.type);
-          }
+          // Also loud: reaching the fallback means the CPU is not playing, it
+          // is merely progressing the game. That is worth seeing without
+          // having to know a debug flag exists.
+          console.warn('[CPU] no scored action for', liveActing, '— falling back to', action?.type);
         }
 
         if (!action) {

@@ -1,0 +1,4 @@
+{
+  "skipOpponentProjection": true,
+  "lookaheadTopK": 16
+}

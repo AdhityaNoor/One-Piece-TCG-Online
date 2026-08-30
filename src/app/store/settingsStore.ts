@@ -40,6 +40,16 @@ export interface SettingsState {
    */
   avatarId: string;
   /**
+   * Opt out of contributing finished matches to AI training data.
+   *
+   * When on (the default), a completed VS CPU match is recorded as an action
+   * stream and uploaded so the CPU can be improved against real play. This is
+   * gameplay only — the moves made, the decks used, the result — and it is
+   * only ever uploaded for a signed-in account. Recording stops entirely the
+   * moment this is switched off; nothing is buffered for later.
+   */
+  contributeMatchData: boolean;
+  /**
    * Local hotseat debug aid: shows both players' hands at once instead of
    * hiding the off-turn player's hand. Project rule: card visibility must
    * be modeled properly even in this mode - this only affects what the UI
@@ -70,6 +80,7 @@ export interface SettingsState {
   setSfxEnabled(value: boolean): void;
   setSfxVolume(value: number): void;
   setMatchNavyBackgroundEnabled(value: boolean): void;
+  setContributeMatchData(value: boolean): void;
   resetToDefaults(): void;
 }
 
@@ -84,6 +95,7 @@ const DEFAULTS = {
   sfxEnabled: true,
   sfxVolume: 0.65,
   matchNavyBackgroundEnabled: false,
+  contributeMatchData: true,
 } satisfies Pick<
   SettingsState,
   | 'username'
@@ -96,6 +108,7 @@ const DEFAULTS = {
   | 'sfxEnabled'
   | 'sfxVolume'
   | 'matchNavyBackgroundEnabled'
+  | 'contributeMatchData'
 >;
 
 export const useSettingsStore = create<SettingsState>()(
@@ -115,6 +128,7 @@ export const useSettingsStore = create<SettingsState>()(
       setSfxEnabled: (value) => set({ sfxEnabled: value }),
       setSfxVolume: (value) => set({ sfxVolume: Math.max(0, Math.min(1, value)) }),
       setMatchNavyBackgroundEnabled: (value) => set({ matchNavyBackgroundEnabled: value }),
+      setContributeMatchData: (value) => set({ contributeMatchData: value }),
       resetToDefaults: () => {
         useCardAnimationStore.getState().clear();
         set(DEFAULTS);

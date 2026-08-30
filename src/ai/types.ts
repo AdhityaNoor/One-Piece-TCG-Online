@@ -1,4 +1,5 @@
 import type { GameAction } from '../engine/actions';
+import type { EvaluatorWeights } from './evaluation/weights';
 
 export type CpuDifficulty = 'easy' | 'normal' | 'hard';
 
@@ -8,6 +9,12 @@ export interface CpuConfig {
   debug?: boolean;
   /** Optional tie-break seed for deterministic decisions among equal scores. */
   seed?: string;
+  /**
+   * Position-evaluation weights for this seat. Omitted means the shipped
+   * baseline. Present so two weight sets can be played against each other in
+   * one process — see evaluation/weights.ts.
+   */
+  weights?: EvaluatorWeights;
 }
 
 export interface ScoredAction {

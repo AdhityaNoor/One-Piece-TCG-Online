@@ -1,0 +1,24 @@
+{
+  "weightsPath": "scripts/ai-sim/candidates/fast-wide-search.json",
+  "difficulty": "hard",
+  "target": 120,
+  "cursor": 24,
+  "pools": {
+    "tuned": {
+      "label": "tuned",
+      "winsA": 9,
+      "winsB": 3,
+      "draws": 0,
+      "played": 12,
+      "timedOut": 0
+    },
+    "held-out": {
+      "label": "held-out",
+      "winsA": 4,
+      "winsB": 8,
+      "draws": 0,
+      "played": 12,
+      "timedOut": 1
+    }
+  }
+}

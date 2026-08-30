@@ -170,7 +170,22 @@ function scoreEffectOp(ctx: EffectScoreContext, op: EffectOp, factor = 1): numbe
     case 'playFromHand':
     case 'playFromTrash':
     case 'playFromDeck':
-      return factor * (12 + scoreCardTimings(ctx, ctx.sourceCardDefinitionId ?? '', ['onPlay', 'onEnterPlay'], 0.8));
+      /**
+       * Putting a body into play for free. This used to add
+       * `scoreCardTimings(ctx.sourceCardDefinitionId, ['onPlay', ...])` —
+       * scoring the card DOING the playing rather than the card being played,
+       * which is the wrong card and, for any "[On Play] play a card" ability,
+       * an infinite recursion into itself. It crashed the CPU outright with a
+       * stack overflow on several real leaders (OP03-021, OP04-001, EB01-040,
+       * OP02-093 among them).
+       *
+       * Which card actually arrives is not known here — it is chosen at
+       * resolution from a selector or a deck search — so there is no card
+       * whose timings could be scored. Value the free body itself, scaled by
+       * how many come down, and let the entry triggers be a bonus we do not
+       * try to predict.
+       */
+      return factor * (12 + freePlayCount(op) * 4);
     case 'searchTopDeck':
     case 'searchDeck':
       return factor * (6 + op.pick * 4);
@@ -207,6 +222,11 @@ function scoreEffectOp(ctx: EffectScoreContext, op: EffectOp, factor = 1): numbe
       return factor * (op.player === 'opponent' ? -10 : 12);
   }
   return 0;
+}
+
+/** How many bodies a free-play op puts down; deck searches name a `pick`. */
+function freePlayCount(op: EffectOp): number {
+  return 'pick' in op && typeof op.pick === 'number' ? Math.max(1, op.pick) : 1;
 }
 
 function scoreEffectOps(ctx: EffectScoreContext, ops: EffectOp[], factor = 1): number {

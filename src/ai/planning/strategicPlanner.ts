@@ -10,6 +10,7 @@ import { terminalStateScore } from '../evaluation/matchObjective';
 import { analyzeLethalLine, prematureEndMainPenalty } from './lethalLineAnalyzer';
 import { shouldPrioritizeLethal } from '../evaluation/lethalEstimator';
 import { analyzeAttackTrade } from '../evaluation/attackTradeEvaluator';
+import { actionShapingFor, getEvaluatorWeights } from '../evaluation/weights';
 
 export interface StrategicScoreResult {
   score: number;
@@ -32,7 +33,11 @@ export function scoreWithStrategy(
     return { score: terminal, strategic: ctx, trace: [`terminal:${terminal > 0 ? 'win' : 'loss'}`] };
   }
 
-  const base = scoreActionStrategic(state, action, playerId, defs, registry, ctx, createActionId);
+  const raw = scoreActionStrategic(state, action, playerId, defs, registry, ctx, createActionId);
+  // Per-action-type shaping (evaluation/weights.ts). Identity by default, so
+  // this is a no-op until a fitted or tuned set says otherwise.
+  const shaping = actionShapingFor(getEvaluatorWeights(), action.type);
+  const base = raw * shaping.scale + shaping.bias;
   const trace = [
     `mode:${ctx.mode}`,
     `utility:${ctx.objective.utility.toFixed(1)}`,

@@ -33,7 +33,7 @@ import {
   executeV2ActionOverride,
 } from '../../engine/effects_V2/engineAdapter_V2';
 import { hashSeed } from '../../engine/rng';
-import { createPreGameState, type PlayerSetupInput } from '../../engine/setup';
+import { createPreGameState, resolveDonDeckSize, type PlayerSetupInput } from '../../engine/setup';
 import type { CardDefinition, CardInstance } from '../../engine/state/card';
 import type { GameState } from '../../engine/state';
 import type { GameLogEntry } from '../../engine/logs/logEntry';
@@ -46,6 +46,10 @@ import { useSettingsStore } from './settingsStore';
 import { useCardAnimationStore } from './cardAnimationStore';
 import { usePhaseAnnounceStore } from './phaseAnnounceStore';
 import { EFFECT_RUNTIME_MODE } from '../config/effectRuntimeMode';
+import { createTrajectoryRecorder, hashCardDataForCardNumbers, type TrajectoryRecorder } from '../../engine/replay';
+import { generateLegalActions } from '../../ai';
+import { submitTrajectory } from '../../multiplayer/net/trajectoryClient';
+import type { TrajectorySeat } from '../../../shared/replay';
 
 /**
  * Splits a dispatch's log delta into (a) ordinary card movement, presented
@@ -116,6 +120,146 @@ function savedDeckMainEntries(deck: SavedDeck): DeckConstructionEntry[] {
 function validateSavedDeckConstruction_V2(deck: SavedDeck, runtime: EffectRuntimeBundle_V2): string[] {
   return validateDeckConstruction_V2(deck.leader.definition, savedDeckMainEntries(deck), runtime).reasons
     .map((reason) => `${deck.name}: ${reason}`);
+}
+
+/**
+ * VS CPU decision logging, opt-in and off by default.
+ *
+ * Enable with `?cpudebug=1` on the URL, or `localStorage.optcgCpuDebug = '1'`.
+ * When on, every CPU decision prints its ranked candidate actions and the
+ * strategic context behind them (see ai/debug/decisionTrace.ts), which is the
+ * only practical way to tell "the CPU chose to pass" apart from "the CPU had
+ * nothing legal to do". Reading it must never throw in a non-browser context
+ * (tests, SSR), hence the guards.
+ */
+function readCpuDebugFlag(): boolean {
+  try {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get('cpudebug') ?? params.get('cpuDebug');
+    if (fromQuery !== null) return fromQuery !== '0' && fromQuery !== 'false';
+    return window.localStorage?.getItem('optcgCpuDebug') === '1';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * VS CPU match recording (see src/engine/replay).
+ *
+ * Held OUTSIDE the zustand store on purpose: it is not UI state, nothing
+ * renders from it, and putting it in the store would re-render the whole match
+ * screen on every recorded action. `startMatch` replaces it, `dispatch` feeds
+ * it, and the end of the game seals and uploads it.
+ *
+ * Every entry point here is wrapped so that a recording fault can never take a
+ * match down with it — this feature is strictly a passenger.
+ */
+let cpuTrajectoryRecorder: TrajectoryRecorder | null = null;
+
+function recordingEnabled(): boolean {
+  try {
+    return useSettingsStore.getState().contributeMatchData !== false;
+  } catch {
+    return false;
+  }
+}
+
+function engineBuildStamp(): string {
+  try {
+    return typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
+function trajectorySeatFor(
+  seatId: string,
+  input: PlayerSetupInput,
+  cpuPlayerIds: readonly string[],
+  cpuDifficulty: CpuDifficulty,
+): TrajectorySeat {
+  const isCpu = cpuPlayerIds.includes(seatId);
+  return {
+    seatId,
+    // Left null on purpose: the ingest endpoint attributes an upload to the
+    // authenticated account that sent it, so a client-supplied user id would
+    // be both redundant and untrustworthy.
+    userId: null,
+    controller: isCpu ? 'cpu' : 'human',
+    ...(isCpu ? { cpuDifficulty } : {}),
+    leaderCardNumber: input.leader.cardNumber,
+    // The EXPANDED, pre-shuffle order actually handed to createPreGameState —
+    // the seeded shuffle is applied to this list, so any other order replays
+    // into a different game.
+    deckCardNumbers: input.deck.map((def) => def.cardNumber),
+    // Resolve the same default the engine would, so a replay rebuilds the same
+    // DON!! deck rather than silently falling back to a different size.
+    donDeckSize: resolveDonDeckSize(input),
+  };
+}
+
+/**
+ * How many actions the acting seat could legally have chosen instead. Without
+ * it a forced move is indistinguishable from a deliberate one, and forced
+ * moves carry no preference signal at all. Computed on the state BEFORE the
+ * action, and never allowed to throw.
+ */
+function countLegalActions(state: GameState, playerId: string, defs: CardDefinitionLookup, registry: EffectTemplateRegistry): number {
+  try {
+    return generateLegalActions({
+      state,
+      playerId,
+      defs,
+      registry,
+      createActionId,
+    }).length;
+  } catch {
+    return -1;
+  }
+}
+
+/** Append an ACCEPTED action to the recording. Never throws. */
+function recordAcceptedAction(action: GameAction, stateAfter: GameState, legalActionCount: number): void {
+  if (!cpuTrajectoryRecorder) return;
+  try {
+    cpuTrajectoryRecorder.record(action, stateAfter, { legalActionCount });
+  } catch {
+    cpuTrajectoryRecorder = null;
+  }
+}
+
+/**
+ * Seal and upload once the match is genuinely over. Fire-and-forget: the
+ * player is already looking at the result screen and must never wait on, or
+ * be shown an error from, a research upload.
+ */
+function finalizeRecordingIfFinished(stateAfter: GameState): void {
+  if (!cpuTrajectoryRecorder || !stateAfter.gameOver) return;
+  const recorder = cpuTrajectoryRecorder;
+  cpuTrajectoryRecorder = null;
+  try {
+    const trajectory = recorder.finish(stateAfter);
+    // Dev-only escape hatch: with ?cpudebug=1 the finished recording is also
+    // parked on window so it can be inspected without a backend configured.
+    try {
+      if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('cpudebug')) {
+        (window as unknown as { __lastTrajectory?: unknown }).__lastTrajectory = trajectory;
+        console.info(`[replay] recorded ${trajectory.actions.length} actions, winner=${trajectory.outcome?.winnerSeatId ?? 'none'}`);
+      }
+    } catch {
+      // never let a debug aid affect the match
+    }
+    // authStore is imported lazily rather than at module scope: it transitively
+    // pulls in savedDecksStore, which reads localStorage while its module
+    // initialises. A static import here would drag `window` into every
+    // node-environment test that touches matchStore.
+    void import('./authStore')
+      .then(({ useAuthStore }) => submitTrajectory(trajectory, useAuthStore.getState().token))
+      .catch(() => undefined);
+  } catch {
+    // A recording that cannot be sealed is simply discarded.
+  }
 }
 
 /** Fixed, stable player ids for the local hotseat match — both sides are the same human, alternating. */
@@ -530,7 +674,7 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     const playerNames = presentation?.playerNames ?? {};
     const cpuPlayerIds = isCpu ? presentation.cpuPlayerIds : [];
     const cpuDifficulty = isCpu ? presentation.difficulty : 'normal';
-    const cpuDebug = isCpu ? (presentation.cpuDebug ?? false) : false;
+    const cpuDebug = isCpu ? (presentation.cpuDebug ?? readCpuDebugFlag()) : false;
 
     // The seed is the root of randomness for this match — it does not itself
     // need to be deterministic (cf. shuffling a real deck before play), only
@@ -600,6 +744,40 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       onlineMode: false,
       onlineSendIntent: null,
     });
+
+    // Begin recording this match (src/engine/replay). VS CPU only: Casual is a
+    // hotseat where both seats are the same human, which is not play data.
+    cpuTrajectoryRecorder = null;
+    if (isCpu && recordingEnabled()) {
+      try {
+        cpuTrajectoryRecorder = createTrajectoryRecorder({
+          source: 'vs-cpu',
+          engineBuild: engineBuildStamp(),
+          // Hash the seat-scoped set (both leaders + every deck entry) using
+          // the SAME normalized definitions the engine is playing with, so a
+          // replay compares like for like.
+          cardDataHash: hashCardDataForCardNumbers(
+            [p1Input, p2Input].flatMap((input) => [
+              input.leader.cardNumber,
+              ...input.deck.map((def) => def.cardNumber),
+            ]),
+            (cardNumber) =>
+              [p1Input, p2Input]
+                .flatMap((input) => [input.leader, ...input.deck])
+                .find((def) => def.cardNumber === cardNumber),
+          ),
+          rngSeed: seed,
+          decidingPlayerId,
+          seats: [
+            trajectorySeatFor(PLAYER_A_ID, p1Input, cpuPlayerIds, cpuDifficulty),
+            trajectorySeatFor(PLAYER_B_ID, p2Input, cpuPlayerIds, cpuDifficulty),
+          ],
+        });
+      } catch {
+        cpuTrajectoryRecorder = null;
+      }
+    }
+
     return { ok: true };
   },
 
@@ -887,6 +1065,9 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     if (!state) {
       return { ok: false, reasons: ['No match is in progress.'] };
     }
+    // Must be measured on the state BEFORE the action, and only when we are
+    // actually recording — enumerating legal actions is not free.
+    const recordedLegalCount = cpuTrajectoryRecorder ? countLegalActions(state, action.playerId, defs, registry) : -1;
     if (onlineMode) {
       if (!onlineSendIntent) return { ok: false, reasons: ['Online transport is not connected.'] };
       onlineSendIntent(action);
@@ -912,6 +1093,8 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
           const { cardImagesByDefinitionId } = get();
           presentLogDelta(state, handled.log, cardImagesByDefinitionId, localPlayerId);
           set({ state: handled.state, v2EffectSidecars: handled.sidecars });
+          recordAcceptedAction(action, handled.state, recordedLegalCount);
+          finalizeRecordingIfFinished(handled.state);
           return { ok: true };
         }
       } catch (e) {
@@ -971,6 +1154,8 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       presentLogDelta(result.state, nextLog.slice(result.log.length), cardImagesByDefinitionId, localPlayerId);
     }
     set({ state: nextState, v2EffectSidecars: nextV2EffectSidecars });
+    recordAcceptedAction(action, nextState, recordedLegalCount);
+    finalizeRecordingIfFinished(nextState);
     return { ok: true };
   },
 
@@ -979,6 +1164,8 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   },
 
   reset() {
+    // An abandoned match is not a result; discard rather than upload.
+    cpuTrajectoryRecorder = null;
     useCardAnimationStore.getState().clear();
     usePhaseAnnounceStore.getState().clear();
     set({ state: null, defs: {}, registry: {}, v2EffectRuntime: null, v2EffectSidecars: null, cardImagesByDefinitionId: {}, accessoriesByPlayerId: {}, startedWithDeckIds: null, startError: null, localPlayerId: null, playerNames: {}, cpuPlayerIds: [], cpuDifficulty: 'normal', cpuDebug: false, playTestMode: false, onlineMode: false, onlineSendIntent: null });

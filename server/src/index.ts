@@ -22,6 +22,7 @@ import { rankedRouter } from './ranked/routes';
 import { profileRouter } from './profile/routes';
 import { decksRouter } from './decks/routes';
 import { supportRouter } from './support/routes';
+import { trajectoriesRouter } from './trajectories/routes';
 import { adminAuthRouter } from './adminAuth/routes';
 import { requireAdminAuth } from './adminAuth/middleware';
 import { adminRouter } from './admin/routes';
@@ -80,6 +81,7 @@ async function main(): Promise<void> {
   app.use('/profile', profileRouter());
   app.use('/decks', decksRouter());
   app.use('/support', supportRouter());
+  app.use('/trajectories', trajectoriesRouter());
   app.use('/banners', bannersPublicRouter());
   app.use('/accessories', accessoriesPublicRouter());
 

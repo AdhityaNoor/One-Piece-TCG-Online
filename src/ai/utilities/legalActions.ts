@@ -152,6 +152,24 @@ function enumerateChoiceResponses(ctx: LegalActionContext, choice: PendingChoice
   const base = baseAction(ctx);
   const actions: GameAction[] = [];
 
+  // Life [Trigger] (10-1-5-2) is published with kind 'YES_NO' (damageStep.ts /
+  // dealLifeDamage.ts) but its resolver — validateResolvePendingChoice's
+  // 'rule:lifeTrigger' branch — accepts ONLY an array: [] to decline (keep the
+  // card in hand) or [sourceInstanceId] to activate (the card is then trashed).
+  // Enumerating booleans here produced two candidates that both failed
+  // validation, so generateLegalActions returned [] for the seat holding the
+  // choice AND for its opponent (a pending choice suppresses every other
+  // branch) — a hard, unrecoverable deadlock mid-battle. Shape-match the
+  // resolver instead of the declared kind.
+  if (choice.sourceEffectId === 'rule:lifeTrigger') {
+    const cardId = choice.sourceInstanceId;
+    actions.push({ type: 'RESOLVE_PENDING_CHOICE', ...base, choiceId: choice.id, response: [] });
+    if (cardId) {
+      actions.push({ type: 'RESOLVE_PENDING_CHOICE', ...base, choiceId: choice.id, response: [cardId] });
+    }
+    return actions;
+  }
+
   if (choice.kind === 'YES_NO') {
     for (const response of [true, false]) {
       actions.push({ type: 'RESOLVE_PENDING_CHOICE', ...base, choiceId: choice.id, response });
@@ -285,10 +303,18 @@ function enumerateMainPhaseActions(ctx: LegalActionContext): GameAction[] {
     });
   }
 
-  const donIds = activeDonIds(ctx);
-  for (const donId of donIds) {
+  // DON!! cards are fungible — every one is the same generic card, so "give
+  // DON!! #3 to Zoro" and "give DON!! #5 to Zoro" are the same decision. The
+  // old cross product emitted one action per (DON!!, target) pair: with 7
+  // active DON!! and 5 bodies that is 35 candidates, all but 5 of them
+  // duplicates. They survived deduplication because the instance ids differ,
+  // then flooded the ranking — LOOKAHEAD_TOP_K is 8, so six of the eight
+  // lookahead slots were spent re-simulating the SAME attachment while
+  // PLAY_CHARACTER lines were never simulated at all. Emit one per target.
+  const [nextDonId] = activeDonIds(ctx);
+  if (nextDonId) {
     for (const targetId of ownFieldCardIds(state, playerId)) {
-      actions.push({ type: 'GIVE_DON', ...base, donInstanceId: donId, targetInstanceId: targetId });
+      actions.push({ type: 'GIVE_DON', ...base, donInstanceId: nextDonId, targetInstanceId: targetId });
     }
   }
 
@@ -415,6 +441,27 @@ function enumeratePassDuringBattle(ctx: LegalActionContext): GameAction[] {
   return [];
 }
 
+/**
+ * Last-resort response shapes for a PendingChoice the enumerator could not
+ * satisfy. A choice whose declared `kind` disagrees with its resolver (as
+ * 'rule:lifeTrigger' did) otherwise leaves the seat with ZERO legal actions,
+ * and because a pending choice suppresses every other branch of
+ * generateLegalActions, the OPPONENT is frozen too — the match cannot advance
+ * by any input. Trying every "decline"-shaped response keeps a shape mismatch
+ * a mis-play instead of a dead game.
+ */
+function enumerateChoiceShapeFallbacks(ctx: LegalActionContext, choice: PendingChoice): GameAction[] {
+  const base = baseAction(ctx);
+  const responses: (boolean | number | string[])[] = [[], false, true, 0];
+  if (choice.sourceInstanceId) responses.push([choice.sourceInstanceId]);
+  return responses.map((response) => ({
+    type: 'RESOLVE_PENDING_CHOICE' as const,
+    ...base,
+    choiceId: choice.id,
+    response,
+  })) as GameAction[];
+}
+
 export function generateLegalActions(ctx: LegalActionContext): GameAction[] {
   const { state, playerId, defs, registry } = ctx;
   if (state.gameOver) return [];
@@ -432,7 +479,17 @@ export function generateLegalActions(ctx: LegalActionContext): GameAction[] {
     candidates = enumerateMainPhaseActions(ctx);
   }
 
-  const legal = uniqueActions(candidates).filter((action) => isLegalAction(state, action, defs, registry));
+  let legal = uniqueActions(candidates).filter((action) => isLegalAction(state, action, defs, registry));
+
+  if (legal.length === 0) {
+    const choice = state.pendingChoices[0];
+    if (choice && choice.playerId === playerId && !(state.currentPhase === 'setup' && choice.sourceEffectId === null)) {
+      legal = uniqueActions(enumerateChoiceShapeFallbacks(ctx, choice)).filter((action) =>
+        isLegalAction(state, action, defs, registry),
+      );
+    }
+  }
+
   return legal;
 }
 

@@ -7,6 +7,7 @@ import { generateLegalActions, type LegalActionContext } from './utilities/legal
 import { buildStrategicContext } from './evaluation/stateEvaluator';
 import { buildDecisionTrace, logDecisionTrace } from './debug/decisionTrace';
 import { rankActionsWithLookahead } from './planning/lookaheadPlanner';
+import { setEvaluatorWeights } from './evaluation/weights';
 
 export interface DecisionEngineInput {
   state: GameState;
@@ -19,6 +20,9 @@ export interface DecisionEngineInput {
 
 export function decideBestAction(input: DecisionEngineInput): CpuDecision | null {
   const started = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  // Install this seat's weights for the whole decision. Safe because a
+  // decision is synchronous start to finish; see evaluation/weights.ts.
+  setEvaluatorWeights(input.config.weights);
   const ctx: LegalActionContext = {
     state: input.state,
     playerId: input.playerId,

@@ -20,6 +20,7 @@ import {
 } from './lethalSequencePlanner';
 import { analyzeAttackTrade } from '../evaluation/attackTradeEvaluator';
 import { turnPlanFirstActionScores } from './sequenceGenerator';
+import { getEvaluatorWeights } from '../evaluation/weights';
 
 export const LOOKAHEAD_TOP_K = 8;
 export const LOOKAHEAD_FOLLOW_UP_K = 4;
@@ -52,6 +53,8 @@ function applyPessimisticUtility(
 ): number {
   const mode = shouldProjectOpponentTurn(action, state, playerId);
   if (mode === 'none') return baseUtility;
+  // Opt out of the projection entirely — see EvaluatorWeights.skipOpponentProjection.
+  if (getEvaluatorWeights().skipOpponentProjection) return baseUtility;
 
   const projected = projectOpponentTurn(state, playerId, defs, registry, createActionId, strategic);
   if (projected.failed) return baseUtility;
@@ -78,7 +81,7 @@ export function scoreActionWithLookahead(
   strategic: StrategicContext,
   heuristicScore: number,
   createActionId: () => string,
-  depth = LOOKAHEAD_DEPTH,
+  depth = getEvaluatorWeights().lookaheadDepth ?? LOOKAHEAD_DEPTH,
 ): LookaheadScoreResult {
   // Losing power races must not be rescued by post-battle simulation (no damage ≠ good line).
   // Floor must beat opponent-turn pessimism on END_MAIN, which can be hundreds of thousands negative.
@@ -213,10 +216,11 @@ export function rankActionsWithLookahead(
       : [];
   const sequencedKeys = new Set(sequencedFirst.map((a) => JSON.stringify(a)));
   // Never spend lookahead budget on power-losing attacks — they keep a hard floor below.
+  const budget = getEvaluatorWeights().lookaheadTopK ?? LOOKAHEAD_TOP_K;
   const topK = [
     ...sequencedFirst,
     ...sorted.filter((a) => !sequencedKeys.has(JSON.stringify(a)) && !isLosingAttack(state, a, defs)),
-  ].slice(0, LOOKAHEAD_TOP_K);
+  ].slice(0, budget);
   const finalScores = new Map<string, number>();
 
   for (const action of actions) {

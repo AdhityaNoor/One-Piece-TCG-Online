@@ -27,7 +27,7 @@ import { verifyToken } from '../auth/jwt';
 import { isSuspended } from '../auth/moderationGate';
 import { GameSession, parseClientDeck, SEAT_P1, SEAT_P2 } from '../game/matchEngine';
 import { filterLogForSeat } from '../game/redaction';
-import { matchHistory, rankedMatches } from '../db/mongo';
+import { matchHistory, matchTrajectories, rankedMatches } from '../db/mongo';
 import type { JwtClaims } from '../../../shared/auth';
 import type { SavedDeck } from '../../../src/cards/decks/savedDeck';
 import type { GameAction } from '../../../src/engine/actions';
@@ -552,6 +552,60 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
       }
     } catch (err) {
       console.error('[GameRoom] failed to persist match history:', err);
+    }
+
+    await this.persistTrajectory(seats, winnerSeat);
+  }
+
+  /**
+   * Store the recorded action stream for AI training (see src/engine/replay).
+   *
+   * Separate from persistHistory and deliberately last: the match record and
+   * the player's ranked/XP outcomes are the things that MUST land. This is
+   * research material, so every failure here is swallowed — a recording is
+   * never worth costing someone their result.
+   *
+   * Unlike a client upload this one is trustworthy by construction: the server
+   * produced every action in it. It is still marked unverified until the
+   * offline export replays it, because "the server wrote it" does not mean the
+   * rules have not changed underneath it since.
+   */
+  private async persistTrajectory(
+    seats: { seatId: string; userId: string; username: string }[],
+    winnerSeat: string | null,
+  ): Promise<void> {
+    if (!this.session) return;
+    try {
+      const trajectory = this.session.finishRecording();
+      if (!trajectory || trajectory.actions.length === 0) return;
+
+      // The engine layer has no notion of accounts, so attribute seats here,
+      // where the seat -> user bindings actually live.
+      const userIdBySeat = new Map(seats.map((seat) => [seat.seatId, seat.userId]));
+      const attributed = {
+        ...trajectory,
+        seats: trajectory.seats.map((seat) => ({
+          ...seat,
+          userId: userIdBySeat.get(seat.seatId) ?? null,
+        })),
+      };
+
+      await matchTrajectories().insertOne({
+        roomCode: this.state.roomCode,
+        userIds: seats.map((seat) => seat.userId).filter((id): id is string => !!id),
+        source: 'online',
+        engineBuild: attributed.engineBuild,
+        cardDataHash: attributed.cardDataHash,
+        leaderCardNumbers: attributed.seats.map((seat) => seat.leaderCardNumber),
+        actionCount: attributed.actions.length,
+        winnerSeatId: winnerSeat,
+        reason: this.session.reason(),
+        verified: false,
+        trajectory: attributed,
+        createdAt: new Date(),
+      });
+    } catch (err) {
+      console.error('[GameRoom] failed to persist match trajectory:', err);
     }
   }
 

@@ -123,8 +123,18 @@ export interface VictoryProjection {
   opponentCurrentLife: number;
   currentTurnLethalProbability: number;
   nextTurnLethalProbability: number;
+  /** Life cards the attacks still available THIS turn can take (capped at Life). */
   expectedSuccessfulLifeDamage: number;
+  /**
+   * Life cards the whole board could take after the Refresh Phase, ignoring
+   * current orientation and summoning sickness. Unspent by attacking — this is
+   * the field that keeps board equity visible once this turn's swings are used.
+   */
+  nextTurnLifeDamagePotential: number;
+  /** Attackers that can still declare THIS turn. */
   availableAttackers: number;
+  /** Leader + Characters that will be able to attack next turn. */
+  boardAttackers: number;
 }
 
 export interface MatchObjectiveEvaluation {

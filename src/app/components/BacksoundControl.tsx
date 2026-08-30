@@ -145,12 +145,14 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
   const sfxVolume = useSettingsStore((state) => state.sfxVolume);
   const matchNavyBackgroundEnabled = useSettingsStore((state) => state.matchNavyBackgroundEnabled);
   const animationsEnabled = useSettingsStore((state) => state.animationsEnabled);
+  const contributeMatchData = useSettingsStore((state) => state.contributeMatchData);
   const setBacksoundEnabled = useSettingsStore((state) => state.setBacksoundEnabled);
   const setBacksoundVolume = useSettingsStore((state) => state.setBacksoundVolume);
   const setSfxEnabled = useSettingsStore((state) => state.setSfxEnabled);
   const setSfxVolume = useSettingsStore((state) => state.setSfxVolume);
   const setMatchNavyBackgroundEnabled = useSettingsStore((state) => state.setMatchNavyBackgroundEnabled);
   const setAnimationsEnabled = useSettingsStore((state) => state.setAnimationsEnabled);
+  const setContributeMatchData = useSettingsStore((state) => state.setContributeMatchData);
 
   // Screens that own a better home for this control expose a slot element and
   // we portal into it; with no slot the gear floats over the bottom-right
@@ -428,6 +430,26 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
                   {isFullscreen ? 'On' : 'Off'}
                 </span>
               </button>
+            </div>
+          </div>
+          {/*
+            Recording finished VS CPU matches is on by default, so the control
+            that turns it off has to be somewhere a player can actually find.
+            A setting that exists only in localStorage is not a choice.
+          */}
+          <div className="mt-4 border-t border-white/10 pt-3">
+            <p className={`mb-2 ${SETTINGS_PANEL_TITLE}`}>Privacy</p>
+            <div className="flex flex-col gap-2">
+              <SettingSwitch
+                label="Share match data"
+                checked={contributeMatchData}
+                onToggle={() => setContributeMatchData(!contributeMatchData)}
+              />
+              <p className="px-1 text-[10px] leading-relaxed text-white/45">
+                Sends finished VS CPU matches — the moves played, the decks used and the
+                result — so the CPU can be trained against real games. Never your account
+                details. Off stops recording immediately; nothing is kept for later.
+              </p>
             </div>
           </div>
         </div>

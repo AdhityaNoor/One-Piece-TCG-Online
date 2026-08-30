@@ -22,6 +22,9 @@ import type { EffectTemplateRegistry } from '../../../src/engine/effects';
 import type { GameLogEntry } from '../../../src/engine/logs/logEntry';
 import { buildCuratedEffectRegistry } from '../../../src/cards/effectTemplates';
 import { migrateSavedDeck, type SavedDeck } from '../../../src/cards/decks/savedDeck';
+import { createTrajectoryRecorder, hashCardDataForCardNumbers, type TrajectoryRecorder } from '../../../src/engine/replay';
+import { resolveDonDeckSize } from '../../../src/engine/setup';
+import type { MatchTrajectory, TrajectorySeat } from '../../../shared/replay';
 import {
   savedDeckToPlayerSetupInput,
   buildCardDefinitionLookup,
@@ -54,6 +57,23 @@ export function parseClientDeck(raw: unknown): SavedDeck | null {
  * are ready with a valid deck. Not serializable itself; only `.state` is
  * (that's what gets broadcast).
  */
+/** Build stamp for server-recorded matches. */
+export const SERVER_ENGINE_BUILD = process.env.ENGINE_BUILD ?? 'server';
+
+function seatRecord(seatId: string, input: ReturnType<typeof savedDeckToPlayerSetupInput>): TrajectorySeat {
+  return {
+    seatId,
+    // Filled in by GameRoom at persist time, which is where seat->user
+    // bindings actually live; the engine layer has no notion of accounts.
+    userId: null,
+    controller: 'human',
+    leaderCardNumber: input.leader.cardNumber,
+    /** The EXPANDED, pre-shuffle order handed to createPreGameState. */
+    deckCardNumbers: input.deck.map((def) => def.cardNumber),
+    donDeckSize: resolveDonDeckSize(input),
+  };
+}
+
 export class GameSession {
   private constructor(
     public state: GameState,
@@ -61,6 +81,13 @@ export class GameSession {
     private readonly images: Record<string, string | null>,
     private readonly registry: EffectTemplateRegistry,
     public readonly seed: string,
+    /**
+     * Records this match as an action stream (src/engine/replay). Lives on the
+     * session rather than on GameRoom so that EVERY accepted action is caught
+     * — concedes and ranked clock timeouts route through apply() too, and a
+     * recording that silently omitted them would replay to the wrong ending.
+     */
+    private readonly recorder: TrajectoryRecorder | null,
   ) {}
 
   /**
@@ -92,7 +119,31 @@ export class GameSession {
     const defs = buildCardDefinitionLookup([p1Deck, p2Deck]);
     const images = buildCardImageLookup([p1Deck, p2Deck]);
     const registry = buildCuratedEffectRegistry(defs);
-    return { ok: true, session: new GameSession(result.state, defs, images, registry, seed) };
+
+    let recorder: TrajectoryRecorder | null = null;
+    try {
+      recorder = createTrajectoryRecorder({
+        source: 'online',
+        engineBuild: SERVER_ENGINE_BUILD,
+        cardDataHash: hashCardDataForCardNumbers(
+          [p1Input, p2Input].flatMap((input) => [
+            input.leader.cardNumber,
+            ...input.deck.map((def) => def.cardNumber),
+          ]),
+          (cardNumber) =>
+            [p1Input, p2Input]
+              .flatMap((input) => [input.leader, ...input.deck])
+              .find((def) => def.cardNumber === cardNumber),
+        ),
+        rngSeed: seed,
+        decidingPlayerId,
+        seats: [seatRecord(SEAT_P1, p1Input), seatRecord(SEAT_P2, p2Input)],
+      });
+    } catch {
+      recorder = null; // recording is a passenger; never block a match on it
+    }
+
+    return { ok: true, session: new GameSession(result.state, defs, images, registry, seed, recorder) };
   }
 
   /**
@@ -110,7 +161,31 @@ export class GameSession {
     if (!validation.legal) return { ok: false, reasons: validation.reasons };
     const result = executeAction(this.state, action, this.defs, this.registry);
     this.state = result.state;
+    // Only ACCEPTED actions are recorded — a rejected intent never happened,
+    // and replaying one would desynchronise the stream from the state.
+    // legalActionCount is left unmeasured (-1): enumerating legal actions on
+    // the live server's hot path would cost every player latency to produce a
+    // number the offline replay can recompute exactly (see replayTrajectory's
+    // countLegalActions option).
+    try {
+      this.recorder?.record(action, this.state);
+    } catch {
+      // ignore — never let recording affect a live match
+    }
     return { ok: true, log: result.log };
+  }
+
+  /**
+   * Seal the recording for persistence. Returns null when recording was off or
+   * already sealed. Safe to call more than once.
+   */
+  finishRecording(): MatchTrajectory | null {
+    if (!this.recorder) return null;
+    try {
+      return this.recorder.finish(this.state);
+    } catch {
+      return null;
+    }
   }
 
   forceConcede(playerId: string, actionId: string): ApplyResult {

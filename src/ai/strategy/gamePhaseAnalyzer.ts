@@ -55,13 +55,12 @@ export function analyzeGamePhase(
   const totalDon = countFieldDon(state, playerId) + countFieldDon(state, opponentId);
   const boardCharacters = countCharacters(state, playerId) + countCharacters(state, opponentId);
   const handPressure = ownHandIds(state, playerId).length + opponentHandCount(state, playerId);
-  // Soft lethal signal — avoid boardHeuristics' binary "100 when power >= life*1000"
-  // which treats a lone 5k Leader vs 5 Life as already lethal.
+  // lethalPressure is now an attack-count measure, so a 100 here really does
+  // mean "the swings available cover the remaining Life" and can be trusted
+  // directly. The local clamp this replaced existed only to defend against the
+  // old power-sum version, which returned 100 for a lone 5k Leader vs 5 Life.
   const rawLethal = lethalPressure(state, playerId, defs);
-  const lethal =
-    oppLife <= 0 && !state.gameOver
-      ? 0
-      : Math.min(100, rawLethal === 100 ? Math.min(55, 10 + boardCharacters * 10 + Math.max(0, totalDon - 3) * 4) : rawLethal);
+  const lethal = oppLife <= 0 && !state.gameOver ? 0 : Math.min(100, rawLethal);
   const turnNumber = state.turnNumber;
   const threatBodies = opponentPublicCardIds(state, playerId).filter((id) => {
     const inst = state.cardsById[id];

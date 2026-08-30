@@ -11,7 +11,7 @@ import { GENERIC_DON_CARD_DEFINITION } from '../../cards/decks/genericDonCard';
 import { resolveAccessoryImageUrl } from '../../cards/accessories/deckAccessories';
 import type { SavedDeck } from '../../cards/decks/savedDeck';
 import type { CardDefinition } from '../../engine/state/card';
-import { derivePrintedKeywordFlags } from '../../cards/normalization/printedKeywords';
+import { normalizeEngineCardDefinition } from '../../cards/normalization/engineDefinition';
 import type { PlayerSetupInput } from '../../engine/setup';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 
@@ -38,19 +38,12 @@ const LEADER_DON_DECK_SIZE_OVERRIDES: Record<string, number> = {
  * snapshotted: they are what the player built the deck with, and re-deriving them would need the
  * live catalog.
  */
-function normalizeSnapshotDefinition(definition: CardDefinition): CardDefinition {
-  const repaired: CardDefinition = {
-    ...definition,
-    ...derivePrintedKeywordFlags(definition.text ?? ''),
-  };
-  if (repaired.types.some((type) => /[\/,]/.test(type))) {
-    return {
-      ...repaired,
-      types: repaired.types.flatMap((type) => type.split(/[\/,]+/).map((part) => part.trim()).filter(Boolean)),
-    };
-  }
-  return repaired;
-}
+/**
+ * Repair a saved-deck snapshot before it reaches the engine. The rule now
+ * lives in cards/normalization so the REPLAY path applies exactly the same
+ * repair — see that module's doc comment for why a mismatch is dangerous.
+ */
+const normalizeSnapshotDefinition = normalizeEngineCardDefinition;
 
 export function resolveLeaderDonDeckSize(leader: CardDefinition, fallback: number): number {
   return LEADER_DON_DECK_SIZE_OVERRIDES[leader.cardNumber] ?? fallback;

@@ -6,37 +6,54 @@ import { opponentLifeCount, opponentPublicCardIds, ownHandIds, ownLifeCount } fr
 import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
 import type { EffectTemplateRegistry } from '../../engine/effects';
 import { scoreHandCardPlay } from './effectValue';
+import { getEvaluatorWeights } from '../evaluation/weights';
+import { damagePotential } from '../evaluation/attackPotential';
 
 export function boardStrength(state: GameState, playerId: string, defs: CardDefinitionLookup, registry: EffectTemplateRegistry = {}): number {
   let score = 0;
   const player = state.players[playerId];
   if (!player) return 0;
 
+  const w = getEvaluatorWeights();
   const leader = state.cardsById[player.leaderInstanceId];
-  if (leader) score += computeCurrentPower(defs, state, leader.instanceId) / 1000;
+  if (leader) score += (computeCurrentPower(defs, state, leader.instanceId) / 1000) * w.powerPerThousand;
 
   for (const id of player.characterArea.cardIds) {
     const inst = state.cardsById[id];
     if (!inst) continue;
     const power = computeCurrentPower(defs, state, id);
-    score += power / 1000;
-    if (inst.orientation === 'active') score += 1.5;
-    score += inst.donAttached.length * 0.5;
+    score += (power / 1000) * w.powerPerThousand;
+    if (inst.orientation === 'active') score += w.activeCharacter;
+    score += inst.donAttached.length * w.donAttached;
     const def = getDefinition(defs, inst);
-    if (hasEffectiveCombatKeyword(defs, state, id, 'blocker')) score += 1;
-    if (hasEffectiveCombatKeyword(defs, state, id, 'rush')) score += 0.5;
+    if (hasEffectiveCombatKeyword(defs, state, id, 'blocker')) score += w.blocker;
+    if (hasEffectiveCombatKeyword(defs, state, id, 'rush')) score += w.rush;
+    if (Object.keys(registry).length > 0) {
+      score += scoreHandCardPlay({ state, playerId, defs, registry, sourceInstanceId: id, sourceCardDefinitionId: inst.cardDefinitionId }, id) * 0.08;
+    }
+  }
+
+  // Stages sit in their own zone and were previously invisible here, so
+  // resolving a Stage read as a card leaving hand for nothing and the CPU
+  // scored playing one as a pure loss. A Stage is a permanent that usually
+  // carries an [Activate: Main] or a continuous ability, so value it as a
+  // body-less permanent plus whatever its program is worth.
+  for (const id of player.stageArea.cardIds) {
+    const inst = state.cardsById[id];
+    if (!inst) continue;
+    score += w.stage;
     if (Object.keys(registry).length > 0) {
       score += scoreHandCardPlay({ state, playerId, defs, registry, sourceInstanceId: id, sourceCardDefinitionId: inst.cardDefinitionId }, id) * 0.08;
     }
   }
 
   for (const id of ownHandIds(state, playerId)) {
-    score += 0.4;
+    score += w.handCard;
     if (Object.keys(registry).length > 0) {
       score += scoreHandCardPlay({ state, playerId, defs, registry, sourceInstanceId: id, sourceCardDefinitionId: state.cardsById[id]?.cardDefinitionId }, id) * 0.05;
     }
   }
-  score += ownLifeCount(state, playerId) * 1.2;
+  score += ownLifeCount(state, playerId) * w.lifeCard;
   return score;
 }
 
@@ -51,7 +68,8 @@ export function evaluatePosition(
   const self = boardStrength(state, playerId, defs, registry);
   const opp = boardStrength(state, opponentId, defs, registry);
   const lifeDelta = ownLifeCount(state, playerId) - opponentLifeCount(state, playerId);
-  return (self - opp) * 10 + lifeDelta * 8;
+  const w = getEvaluatorWeights();
+  return (self - opp) * w.boardDifference + lifeDelta * w.lifeDifference;
 }
 
 export function threatPower(state: GameState, playerId: string, defs: CardDefinitionLookup): number {
@@ -62,25 +80,35 @@ export function threatPower(state: GameState, playerId: string, defs: CardDefini
   return max;
 }
 
+/**
+ * How close this player is to winning, 0-100.
+ *
+ * This drives selectStrategicMode(), so getting it wrong mis-sets the CPU's
+ * whole game plan. It used to sum board power and return a flat 100 whenever
+ * `total >= opponentLife * 1000` — meaning a lone 5000-power Leader against a
+ * full 5 Life scored MAXIMUM lethal pressure on turn one. The CPU then sat in
+ * 'lethal_search' for the entire game, and that mode's weights are
+ * `survival: 0.7, development: 0.5, preserveHand: 0.3`: it was explicitly told
+ * to stop developing and stop holding defensive cards while it "closed out" a
+ * win that was ten turns away. gamePhaseAnalyzer had already noticed and
+ * clamped the 100 locally; the fix belongs here, at the source.
+ *
+ * Life damage is a count of connecting attacks (7-1-4 / 10-1-3), so measure it
+ * with the shared attack-count model instead.
+ */
 export function lethalPressure(state: GameState, playerId: string, defs: CardDefinitionLookup): number {
-  const player = state.players[playerId];
-  if (!player) return 0;
-  let total = 0;
-  const leaderId = player.leaderInstanceId;
-  if (leaderId) {
-    const leader = state.cardsById[leaderId];
-    if (leader?.orientation === 'active' && !leader.summoningSick) {
-      total += computeCurrentPower(defs, state, leaderId);
-    }
-  }
-  for (const id of player.characterArea.cardIds) {
-    const inst = state.cardsById[id];
-    if (!inst || inst.orientation !== 'active' || inst.summoningSick) continue;
-    total += computeCurrentPower(defs, state, id);
-  }
   const oppLife = opponentLifeCount(state, playerId);
-  if (total >= oppLife * 1000) return 100;
-  return total / Math.max(1, oppLife) / 100;
+  if (oppLife <= 0) return state.gameOver ? 100 : 0;
+
+  const now = damagePotential(state, playerId, defs, 'thisTurn');
+  if (now.rawLifeDamage >= oppLife) return 100;
+
+  const next = damagePotential(state, playerId, defs, 'nextTurn');
+  const nowShare = Math.min(1, now.rawLifeDamage / oppLife);
+  const nextShare = Math.min(1, next.rawLifeDamage / oppLife);
+  // Weighted toward what can be closed RIGHT NOW; the refreshed board only
+  // earns partial credit, so a wide board is never mistaken for a kill.
+  return Math.min(95, nowShare * 70 + nextShare * 20);
 }
 
 /**

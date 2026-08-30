@@ -10,6 +10,7 @@ import { MongoClient, type Collection, type Db } from 'mongodb';
 import { env } from '../config/env';
 import type { UserDocument } from '../auth/userModel';
 import type { MatchHistoryDocument } from '../models/matchHistory';
+import type { MatchTrajectoryDocument } from '../models/matchTrajectory';
 import type { BugReportDocument } from '../models/bugReport';
 import type { AdminDocument } from '../models/admin';
 import type { FeatureFlagDocument } from '../models/featureFlag';
@@ -64,6 +65,11 @@ export function users(): Collection<UserDocument> {
 
 export function matchHistory(): Collection<MatchHistoryDocument> {
   return getDb().collection<MatchHistoryDocument>('matchHistory');
+}
+
+/** Recorded action streams for AI training — see models/matchTrajectory.ts. */
+export function matchTrajectories(): Collection<MatchTrajectoryDocument> {
+  return getDb().collection<MatchTrajectoryDocument>('matchTrajectories');
 }
 
 export function rankedProfiles(): Collection<RankedProfileDocument> {
