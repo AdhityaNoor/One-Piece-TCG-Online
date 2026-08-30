@@ -21,6 +21,7 @@ import {
 import { analyzeAttackTrade } from '../evaluation/attackTradeEvaluator';
 import { turnPlanFirstActionScores } from './sequenceGenerator';
 import { getEvaluatorWeights } from '../evaluation/weights';
+import { estimateOpponentThreat } from '../evaluation/threatModel';
 
 export const LOOKAHEAD_TOP_K = 8;
 export const LOOKAHEAD_FOLLOW_UP_K = 4;
@@ -53,8 +54,20 @@ function applyPessimisticUtility(
 ): number {
   const mode = shouldProjectOpponentTurn(action, state, playerId);
   if (mode === 'none') return baseUtility;
+
+  const weights = getEvaluatorWeights();
   // Opt out of the projection entirely — see EvaluatorWeights.skipOpponentProjection.
-  if (getEvaluatorWeights().skipOpponentProjection) return baseUtility;
+  // Measured to cost control matchups; kept only so that trade stays measurable.
+  if (weights.skipOpponentProjection) return baseUtility;
+
+  // Answer the same question with the fitted model rather than a full turn
+  // simulation. Applied with the SAME blend the simulation uses, so this
+  // substitutes for the projection without also changing how it is weighted.
+  if (weights.useThreatModel) {
+    const estimated = baseUtility + estimateOpponentThreat(state, playerId, defs).delta;
+    if (mode === 'full') return estimated;
+    return baseUtility * (1 - MID_TURN_PESSIMISM_BLEND) + estimated * MID_TURN_PESSIMISM_BLEND;
+  }
 
   const projected = projectOpponentTurn(state, playerId, defs, registry, createActionId, strategic);
   if (projected.failed) return baseUtility;

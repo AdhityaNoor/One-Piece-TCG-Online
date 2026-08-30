@@ -1,8 +1,10 @@
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
-import { computeCurrentPower } from '../../engine/rules/shared/power';
+import { computeCurrentCost, computeCurrentPower } from '../../engine/rules/shared/power';
 import { getDefinition } from '../../engine/rules/shared/definitions';
+import type { EffectTemplateRegistry } from '../../engine/effects';
 import type { GameState } from '../../engine/state/game';
-import { ownHandIds } from '../visibility/playerView';
+import { ownActiveDonIds, ownHandIds } from '../visibility/playerView';
+import { resolveAiEffectProgram } from '../utilities/effectPrograms';
 
 export interface CounterNeedAnalysis {
   attackerPower: number;
@@ -45,6 +47,55 @@ export function printedCounterValue(
   return def.counter ?? 0;
 }
 
+/**
+ * Total Counter power this player could still add to the current battle.
+ *
+ * This is the number that decides whether countering is worth STARTING. A
+ * Counter that fails to reach the attacker's power buys nothing at all — the
+ * defender still loses the battle, the Life card is still taken, and the cards
+ * spent are simply gone. So a partial Counter is only ever correct as a step
+ * toward a total that DOES cover; on its own it is pure loss.
+ *
+ * Counts printed Counter values in hand plus the power that playable
+ * [Counter] Events would add, since both feed the same battle.
+ */
+export function availableCounterPower(
+  state: GameState,
+  defs: CardDefinitionLookup,
+  playerId: string,
+  registry: EffectTemplateRegistry = {},
+): number {
+  let total = 0;
+  const activeDon = ownActiveDonIds(state, playerId).length;
+
+  for (const id of ownHandIds(state, playerId)) {
+    const inst = state.cardsById[id];
+    if (!inst) continue;
+    const def = getDefinition(defs, inst);
+
+    if (def.category === 'character') {
+      total += def.counter ?? 0;
+      continue;
+    }
+
+    if (def.category === 'event') {
+      // An Event only counts if it can actually be paid for and actually adds
+      // power — a [Counter] Event that draws a card does not save the battle.
+      const program = resolveAiEffectProgram(registry, defs, inst.cardDefinitionId);
+      const ability = program?.abilities.find((a) => a.timing === 'counter');
+      if (!ability) continue;
+      if (computeCurrentCost(defs, state, id, registry) > activeDon) continue;
+      for (const op of ability.ops) {
+        if (op.op === 'addPower' && typeof op.amount === 'number' && op.amount > 0) {
+          total += op.amount;
+        }
+      }
+    }
+  }
+
+  return total;
+}
+
 /** Smallest printed counter in hand that covers `need`, or null if none covers. */
 export function smallestCoveringCounter(
   state: GameState,
@@ -72,8 +123,15 @@ export function scoreCharacterCounterUse(input: {
   boostsBattleTarget: boolean;
   life: number;
   survivalUrgency: number;
+  /**
+   * Total Counter power still available this battle, INCLUDING this card. When
+   * omitted the unreachable check cannot run and only this card's own value is
+   * considered — callers in the battle path should always pass it.
+   */
+  availableCounterPower?: number;
 }): number {
   const { need, counterValue, boostsBattleTarget, life, survivalUrgency } = input;
+  const available = input.availableCounterPower ?? counterValue;
 
   if (!boostsBattleTarget) return -40;
   if (counterValue <= 0) return -50;
@@ -87,6 +145,20 @@ export function scoreCharacterCounterUse(input: {
   const overkill = Math.max(0, counterValue - need.deficit);
   const underkill = Math.max(0, need.deficit - counterValue);
 
+  /**
+   * THE DEFICIT CANNOT BE COVERED, so every Counter spent here is thrown away:
+   * the battle is lost either way and the Life card is taken either way. This
+   * must return before the low-Life urgency bonuses below, because those exist
+   * to make the CPU fight for its life and would otherwise fund exactly the
+   * wrong fight — at 1-2 Life they were large enough (+35 / +18) to push a
+   * hopeless partial Counter above passing, so the CPU trashed a 2000 into a
+   * 3000 deficit and took the Life anyway. Desperation is a reason to spend
+   * everything on a battle that CAN be saved, never on one that cannot.
+   */
+  if (!covers && available < need.deficit) {
+    return -60 - counterValue / 200;
+  }
+
   let score = 0;
 
   if (covers) {
@@ -96,7 +168,8 @@ export function scoreCharacterCounterUse(input: {
     // Mild preference for smaller exact covers (1k over 3k when both work).
     score -= counterValue / 400;
   } else {
-    // Partial fill only makes sense if more counters can follow; still costly.
+    // A partial fill that DOES lead somewhere: the rest of the hand can finish
+    // the job, so this is a down payment rather than a donation.
     score = 18 - underkill / 400 - counterValue / 500;
     if (life > 2 && !need.lifeAtRisk) score -= 15;
   }
@@ -111,11 +184,22 @@ export function scorePassCounterStep(input: {
   need: CounterNeedAnalysis | null;
   life: number;
   survivalUrgency: number;
+  /** Total Counter power still available. Omitted disables the hopeless check. */
+  availableCounterPower?: number;
 }): number {
   const { need, life, survivalUrgency } = input;
   if (!need) return 25;
 
   if (need.alreadySafe) return 90;
+
+  /**
+   * The battle is unwinnable with what is in hand. Passing is then not merely
+   * acceptable, it is the only play that does not also lose cards — so it has
+   * to outrank the desperation-driven Counter scores at 1-2 Life.
+   */
+  if (input.availableCounterPower !== undefined && input.availableCounterPower < need.deficit) {
+    return 70;
+  }
 
   // Passing while losing: bad if life is on the line, otherwise often correct to conserve.
   if (need.lifeAtRisk) {

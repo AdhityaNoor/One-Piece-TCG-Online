@@ -32,6 +32,7 @@ import { evaluateSequencedLethalBonus, analyzeSequencedLethalInsight } from '../
 import { analyzeAttackTrade, scoreAttackTrade } from './attackTradeEvaluator';
 import {
   analyzeCounterNeed,
+  availableCounterPower,
   printedCounterValue,
   scoreCharacterCounterUse,
   scorePassCounterStep,
@@ -386,6 +387,8 @@ export function scoreActionStrategic(
         boostsBattleTarget,
         life,
         survivalUrgency,
+        // Without this the scorer cannot tell a down payment from a donation.
+        availableCounterPower: availableCounterPower(state, defs, playerId, registry),
       });
     }
 
@@ -403,6 +406,13 @@ export function scoreActionStrategic(
 
       if (need.alreadySafe) return -40 + counterScore * 0.15;
 
+      // Same rule as character Counters: if the whole hand cannot reach the
+      // attacker's power, the battle is lost regardless and spending an Event
+      // on it only loses the Event too.
+      if (availableCounterPower(state, defs, playerId, registry) < need.deficit) {
+        return -60 + counterScore * 0.1;
+      }
+
       // Events are harder to size; only use when life is threatened or deficit is large.
       if (need.lifeAtRisk && (life <= 2 || need.deficit >= 2000)) {
         return 40 + counterScore * 0.4 + survivalUrgency * 0.2 - need.deficit / 2000;
@@ -415,7 +425,12 @@ export function scoreActionStrategic(
       if (state.currentBattle?.step === 'counter') {
         const life = ownLifeCount(state, playerId);
         const need = analyzeCounterNeed(state, defs, state.currentBattle.targetInstanceId);
-        return scorePassCounterStep({ need, life, survivalUrgency });
+        return scorePassCounterStep({
+          need,
+          life,
+          survivalUrgency,
+          availableCounterPower: availableCounterPower(state, defs, playerId, registry),
+        });
       }
       return 25;
 

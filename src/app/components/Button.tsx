@@ -1,7 +1,7 @@
 /**
- * Simple transparent parallelogram button. The frame is a skewed rectangle
- * (-skew-x-12) with a transparent fill; the label is counter-skewed so the
- * text stays upright. Variants differ only in border / text colour.
+ * Transparent ROUNDED parallelogram button. The frame is a skewed rectangle
+ * (-skew-x-12) with a transparent fill and a small corner radius; the label is
+ * counter-skewed so the text stays upright. Variants differ only in border / text colour.
  */
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
@@ -34,7 +34,9 @@ export function Button({ variant = 'primary', size = 'md', fullWidth, leading, c
   return (
     <button
       className={[
-        'inline-flex -skew-x-12 items-center justify-center border bg-transparent transition-colors duration-200',
+        // Rounded parallelogram: the skew keeps the game's angular identity, the radius
+        // takes the hard edge off. Together they read as deliberate rather than default.
+        'inline-flex -skew-x-12 items-center justify-center rounded-[0.45rem] border bg-transparent transition-colors duration-200',
         'font-heading font-black uppercase tracking-[0.08em]',
         'disabled:cursor-not-allowed disabled:opacity-50',
         VARIANT_CLASSES[variant],

@@ -143,6 +143,17 @@ export interface EvaluatorWeights {
   lookaheadTopK?: number;
   /** Plies of lookahead. Default 2. */
   lookaheadDepth?: number;
+
+  /**
+   * Estimate the opponent's coming turn with the fitted threat model instead of
+   * simulating it (see evaluation/threatModel.ts).
+   *
+   * Distinct from `skipOpponentProjection`, which ANSWERS NOTHING and was
+   * measured to cost control matchups. This still answers the question — "how
+   * much worse does this get once they have had their turn, and do I die" — at
+   * ~0.1ms instead of ~5.5ms per leaf.
+   */
+  useThreatModel?: boolean;
 }
 
 /**
