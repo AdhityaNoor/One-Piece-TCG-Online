@@ -206,7 +206,12 @@ describe('semantic family: delayed effects', () => {
       FILM,
     ));
 
-    const scheduled = runTimings(registry['SYN-SRC'], ['whenAttacking'], rig.state, sourceId, rig.defs, null, registry);
+    // WHICH Character is trashed is the controller's pick, asked when the ability resolves
+    // (the End Phase itself cannot prompt) — see endOfTurnTrashPick.test.ts.
+    const fired = runTimings(registry['SYN-SRC'], ['whenAttacking'], rig.state, sourceId, rig.defs, null, registry);
+    const pick = fired.state.pendingChoices[0];
+    expect(pick).toBeDefined();
+    const scheduled = resumeProgram(registry['SYN-SRC'], fired.state, pick, [filmId], rig.defs, null, registry);
     expect(scheduled.state.delayedEffects).toHaveLength(1);
 
     const ended = runEndPhaseAndHandoff({ ...scheduled.state, currentPhase: 'end' }, rig.defs, registry).state;

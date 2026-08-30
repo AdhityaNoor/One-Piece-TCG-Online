@@ -186,9 +186,14 @@ describe('normalizeDonCard', () => {
 });
 
 describe('normalizeCardPrintings — battle keyword detection (10-1, 10-2)', () => {
-  it('detects [Rush] presence (real API row, P-001 Egghead promo)', () => {
+  it('does NOT set hasRush for a CONDITIONAL grant (real API row, P-001)', () => {
+    // "[DON!! x2] This Character gains [Rush]" — the card has Rush only while 2 DON!! are
+    // attached, so the printed flag must stay false and the curated `addKeyword ...
+    // condition: { donAttachedAtLeast: 2 }` supplies it. A printed flag is checked BEFORE any
+    // curated ability, so setting it here handed the card unrestricted Rush. See
+    // printedKeywords.ts.
     const { definition } = normalizeCardPrintings([samplePromoPrintingWithMissingImage]);
-    expect(definition.hasRush).toBe(true);
+    expect(definition.hasRush).toBe(false);
     expect(definition.hasBlocker).toBe(false);
     expect(definition.hasDoubleAttack).toBe(false);
     expect(definition.hasBanish).toBe(false);

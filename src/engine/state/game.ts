@@ -794,6 +794,13 @@ export type DelayedEffectRecord =
       ownerId: string;
       triggerPlayerId: string;
       typeIncludes?: string;
+      /**
+       * The Character the controller chose when the ability resolved. "Trash 1 of your {X}
+       * Characters" is the player's pick, but the End Phase cannot prompt, so the pick is made
+       * up front and remembered here. If it is no longer a matching Character on the field when
+       * the effect resolves, the end-of-turn step falls back to the first match.
+       */
+      preferredInstanceId?: string;
     }
   | {
       id: string;
@@ -866,6 +873,14 @@ export interface GameState {
    * advanceAutomaticPhases re-enters `refresh`. Cleared when Refresh mechanics complete.
    */
   startOfTurnHandledKeys?: Record<string, true>;
+  /**
+   * Keys `${instanceId}:${abilityIndex}` for [End of your turn] abilities already resolved in
+   * THIS End Phase. The mirror of startOfTurnHandledKeys: an [End of Your Turn] ability that
+   * needs a choice suspends the End Phase, and advanceAutomaticPhases re-enters `end` once the
+   * choice is answered — without this, every already-fired ability would fire again. Cleared
+   * when the End Phase completes and the turn hands off.
+   */
+  endOfTurnHandledKeys?: Record<string, true>;
   pendingChoices: PendingChoice[];
   /**
    * Instance ids of Life cards whose [Trigger] the defending player chose to

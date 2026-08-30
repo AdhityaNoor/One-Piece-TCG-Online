@@ -219,14 +219,20 @@ export function consumeEndOfTurnDelayedEffects(
     if (effect.kind === 'trashControllerCharacterAtEndOfTurn') {
       const player = working.players[effect.ownerId];
       if (!player) continue;
-      const targetId = player.characterArea.cardIds.find((id) => {
+      const matches = (id: string): boolean => {
         const inst = working.cardsById[id];
         if (!inst) return false;
         const def = defs[inst.cardDefinitionId];
         if (!def || def.category !== 'character') return false;
         if (effect.typeIncludes && !cardTypeIncludes(def.types, effect.typeIncludes)) return false;
         return true;
-      });
+      };
+      // The controller picked one when the ability resolved; honour it while it is still a
+      // matching Character on the field, and only then fall back to the first match.
+      const picked = effect.preferredInstanceId;
+      const targetId = picked && player.characterArea.cardIds.includes(picked) && matches(picked)
+        ? picked
+        : player.characterArea.cardIds.find(matches);
       if (!targetId) continue;
       const koed = applyKoToTrash(working, targetId, effect.ownerId, 'effect', defs, null);
       working = { ...koed.state, log: [...working.log, ...koed.log] };

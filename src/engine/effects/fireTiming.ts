@@ -777,19 +777,28 @@ export function fireEndOfTurn(
   if (!player) return noop(state);
   let working = state;
   let log: ActionExecuteResult['log'] = [];
-  let pendingChoices: ActionExecuteResult['pendingChoices'] = [];
   const ids = [player.leaderInstanceId, ...player.characterArea.cardIds, ...player.stageArea.cardIds];
   for (const id of ids) {
     const inst = working.cardsById[id];
     if (!inst) continue;
     const program = resolveEffectProgram(registry, defs, inst.cardDefinitionId);
     if (!program || !program.abilities.some((a) => a.timing === 'endOfTurn')) continue;
+    // Claim this source's slot BEFORE resolving it. An [End of Your Turn] ability that needs a
+    // choice suspends the whole End Phase (runEndPhaseAndHandoff returns without handing the turn
+    // over), and advanceAutomaticPhases re-enters `end` once the player answers — the claim is
+    // what stops every source before it from firing a second time. Same pattern as
+    // onStartOfTurn's startOfTurnHandledKeys and the leader-battle sweep's per-battle set.
+    const handledKey = `${id}:endOfTurn`;
+    if (working.endOfTurnHandledKeys?.[handledKey]) continue;
+    working = { ...working, endOfTurnHandledKeys: { ...working.endOfTurnHandledKeys, [handledKey]: true } };
     const res = runTimings(program, ['endOfTurn'], working, id, defs, actionId, registry);
     working = res.state;
     log = [...log, ...res.log];
-    pendingChoices = [...pendingChoices, ...res.pendingChoices];
+    // Stop the sweep on a prompt: the remaining sources must not resolve while the player still
+    // owes an answer, and they are picked up when the End Phase is re-entered.
+    if (res.pendingChoices.length > 0) return { state: working, log, pendingChoices: res.pendingChoices };
   }
-  return { state: working, log, pendingChoices };
+  return { state: working, log, pendingChoices: [] };
 }
 
 /**

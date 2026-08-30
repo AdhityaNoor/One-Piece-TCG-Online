@@ -17,6 +17,7 @@ import type { Attribute, CardCategory, CardDefinition, Color } from '../../engin
 import type { CardPrintingDto, DonCardDto } from '../api/types';
 import { pickCanonicalPrinting } from './canonicalPrinting';
 import { extractTriggerText } from './extractTriggerText';
+import { derivePrintedKeywordFlags } from './printedKeywords';
 import { coerceCounterAmount, coerceOptionalNumber } from './parseNumericField';
 import { warn, type NormalizationWarning } from './warnings';
 
@@ -106,34 +107,6 @@ function parseTypes(subTypes: string | null, cardNumber: string, warnings: Norma
   return [trimmed];
 }
 
-function leadingBracketTags(text: string): string[] {
-  const tags: string[] = [];
-  let rest = text.trimStart();
-  while (rest.startsWith('[')) {
-    const end = rest.indexOf(']');
-    if (end < 0) break;
-    tags.push(rest.slice(0, end + 1));
-    rest = rest.slice(end + 1).trimStart();
-  }
-  return tags;
-}
-
-function hasLeadingKeywordTag(text: string, tag: string): boolean {
-  return leadingBracketTags(text).includes(tag);
-}
-
-/**
- * True when [Blocker] is a printed keyword ability on this card.
- * Leading tag runs count, and so do trailing keyword clauses after a prior
- * sentence ("…+5 cost.[Blocker] (After your opponent…)") — but not effect text
- * that merely mentions activating/gaining Blocker on another card.
- */
-function hasPrintedBlockerKeyword(text: string): boolean {
-  if (hasLeadingKeywordTag(text, '[Blocker]')) return true;
-  // Unconditional keyword ability after a prior clause (OP12-063-style).
-  return /(?:^|[.!?])\s*\[Blocker\](?:\s*(?:\(|\[|$))/m.test(text);
-}
-
 export interface NormalizeCardPrintingsResult {
   definition: CardDefinition;
   /** card_image_id of every non-canonical printing (Parallel/SP/manga/etc.) — for library/UI art-picker use, not gameplay. */
@@ -168,22 +141,9 @@ export function normalizeCardPrintings(printings: CardPrintingDto[]): NormalizeC
     counter: coerceCounterAmount(canonical.counter_amount),
     hasTrigger: canonical.card_text.includes('[Trigger]'),
     triggerText: extractTriggerText(canonical.card_text, cardNumber, warnings),
-    // Static keyword flags. [Blocker] is a printed keyword ability (leading tags
-    // or a trailing keyword clause). Text like "cannot activate [Blocker]" or
-    // "gains [Blocker]" does not make this card a static Blocker.
-    // [Rush: Character] is a DIFFERENT keyword from [Rush]: it only lets the card
-    // attack CHARACTERS on the turn it is played, never the Leader. Folding it into
-    // hasRush granted unrestricted Rush — strictly more permissive than the card.
-    // The engine models it as the continuous keyword
-    // `canAttackCharactersWhileSummoningSick`, granted by a curated onEnterPlay
-    // ability, so it must NOT be a printed-keyword flag here. Note '[Rush: Character]'
-    // does not contain the substring '[Rush]', so the plain check below is already
-    // correct on its own.
-    hasRush: canonical.card_text.includes('[Rush]'),
-    hasBlocker: hasPrintedBlockerKeyword(canonical.card_text),
-    hasDoubleAttack: canonical.card_text.includes('[Double Attack]'),
-    hasBanish: canonical.card_text.includes('[Banish]'),
-    isUnblockable: canonical.card_text.includes('[Unblockable]'),
+    // Static keyword flags — see printedKeywords.ts for why a substring test is wrong
+    // (conditional grants, grants to other cards, and negations all mention the tag).
+    ...derivePrintedKeywordFlags(canonical.card_text),
     cardNumber,
     rarity: canonical.rarity,
     // blockSymbol, illustration, illustrator: not exposed by the OPTCG API at all (no source field) —

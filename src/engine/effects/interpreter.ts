@@ -1324,6 +1324,7 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       return EMPTY_RESULT;
     }
     case 'scheduleTrashControllerCharacterAtEndOfTurn': {
+      const preferred = op.fromVar ? (bindings[op.fromVar] ?? [])[0] : undefined;
       ctx.scheduleDelayedEffect({
         id: `${ctx.sourceInstanceId}:trash-char:eot:${ctx.state().turnNumber}:${ctx.state().delayedEffects?.length ?? 0}`,
         kind: 'trashControllerCharacterAtEndOfTurn',
@@ -1331,6 +1332,7 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
         ownerId: ctx.controllerId,
         triggerPlayerId: ctx.controllerId,
         ...(op.typeIncludes ? { typeIncludes: op.typeIncludes } : {}),
+        ...(preferred ? { preferredInstanceId: preferred } : {}),
       });
       return EMPTY_RESULT;
     }

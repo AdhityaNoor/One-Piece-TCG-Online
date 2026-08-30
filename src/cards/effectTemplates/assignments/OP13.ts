@@ -872,7 +872,23 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  { cardNumber: 'OP13-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
+  // OP13-031 Trafalgar Law — "If you have 1 or less Life cards, this Character gains [Blocker].
+  //   [On Play] You may return 1 of your Characters to the owner's hand: Play up to 1 Character
+  //   card with a cost of 5 or less from your hand rested."
+  //   The previous curation was written against DIFFERENT text (bottom-deck an opponent Character
+  //   with cost 1 or less) — EN and JP both read as above. The [Blocker] half was invisible
+  //   because the card DATA carried hasBlocker from the old substring parse, so the Character
+  //   blocked at ANY Life count; it is a conditional grant and belongs here.
+  {
+    cardNumber: 'OP13-031',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfLife', atMost: 1 }] } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [
+        { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
+        { fn: 'playFromHand', filter: { category: 'character', maxCost: 5 }, rested: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+      ] } },
+    ],
+  },
 
   // OP13-120 -- [Activate: Main] [OPT] Character +2 cost until end of opp next turn, then give 1 rested DON!!.
   { cardNumber: 'OP13-120', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [

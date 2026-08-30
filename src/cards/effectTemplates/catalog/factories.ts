@@ -1518,8 +1518,31 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
     }
     case 'movePreviousMovedToBottomDeckAtEndOfTurn':
       return [{ op: 'scheduleMoveInstanceToBottomDeckAtEndOfTurn', fromVar: '__lastMovedIds', index: 0 }];
-    case 'trashControllerCharacterAtEndOfTurn':
-      return [{ op: 'scheduleTrashControllerCharacterAtEndOfTurn', ...(f.filter?.typeIncludes ? { typeIncludes: f.filter.typeIncludes } : {}) }];
+    case 'trashControllerCharacterAtEndOfTurn': {
+      // "Trash 1 of YOUR {X} Characters at the end of this turn" — WHICH one is the controller's
+      // choice, and the engine used to take the first match silently. The End Phase cannot
+      // prompt (phases/phaseStepResult.ts has no pendingChoices slot), so the pick is made here,
+      // when the ability resolves, and carried on the scheduled record.
+      // KNOWN LIMITATION / needs ruling confirmation: strictly the choice belongs at end of turn.
+      // A pick that has left the field by then falls back to the first match, which is also what
+      // happens when the controller had no matching Character to pick at scheduling time.
+      const typeFilter = f.filter?.typeIncludes;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 'eotTrashPick',
+          from: { sel: 'controllerCharacters', ...(typeFilter ? { typeIncludes: typeFilter } : {}) },
+          min: 0,
+          max: 1,
+          prompt: `Choose the ${typeFilter ? `{${typeFilter}} ` : ''}Character to trash at the end of this turn.`,
+        },
+        {
+          op: 'scheduleTrashControllerCharacterAtEndOfTurn',
+          fromVar: 'eotTrashPick',
+          ...(typeFilter ? { typeIncludes: typeFilter } : {}),
+        },
+      ];
+    }
     case 'returnDonToMatchOpponentAtEndOfTurn':
       return [{ op: 'scheduleReturnDonToMatchOpponentAtEndOfTurn' }];
     case 'moveDeckTopToLifeAtEndOfTurn': {

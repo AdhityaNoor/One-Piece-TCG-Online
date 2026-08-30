@@ -545,7 +545,19 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP16-008', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { exactBasePower: 10000 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 8000 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
 
 
-  { cardNumber: 'OP16-009', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
+  // OP16-009 Speed Jil — "[On Play] You may trash 1 Character card with 8000 power from your
+  //   hand: This Character gains [Rush] and +2000 power until the end of your opponent's next
+  //   End Phase."
+  //   The previous curation was written against DIFFERENT text (an 8000-power hand GATE, then
+  //   resting an opponent Character) — EN and JP both read as above. The trash is an optional
+  //   COST, so both halves of the payoff hang off it; they use ifGate/boundVarsTotalCount rather
+  //   than ifPrevious because `addKeyword` reports no moved cards, which would make a following
+  //   `previousMovedAny` always false (see deadIfPreviousGate.test.ts).
+  { cardNumber: 'OP16-009', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { category: 'character', exactPower: 8000 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
+    { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'endOfOpponentsTurn', ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['t'], atLeast: 1 }] },
+    { fn: 'addPowerSelf', amount: 2000, duration: 'endOfOpponentsTurn', ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['t'], atLeast: 1 }] },
+  ] } },
 
 
   { cardNumber: 'OP16-010', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },

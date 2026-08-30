@@ -11,6 +11,7 @@ import { GENERIC_DON_CARD_DEFINITION } from '../../cards/decks/genericDonCard';
 import { resolveAccessoryImageUrl } from '../../cards/accessories/deckAccessories';
 import type { SavedDeck } from '../../cards/decks/savedDeck';
 import type { CardDefinition } from '../../engine/state/card';
+import { derivePrintedKeywordFlags } from '../../cards/normalization/printedKeywords';
 import type { PlayerSetupInput } from '../../engine/setup';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 
@@ -18,14 +19,37 @@ const LEADER_DON_DECK_SIZE_OVERRIDES: Record<string, number> = {
   'OP15-058': 6,
 };
 
+/**
+ * Repairs a CardDefinition SNAPSHOT before it reaches the engine.
+ *
+ * A SavedDeck stores the CardDefinition as it looked when the deck was saved, and a match runs
+ * entirely off those snapshots — nothing re-reads the catalog. So a card-data bug fixed later
+ * lives on in every deck saved before the fix, and only in those decks, which is exactly how it
+ * gets reported: "this one card behaves wrongly and nobody else can reproduce it".
+ *
+ * The real case: until 2026-08-27 the scraper wrote
+ * `hasRush: text.includes('[Rush]') || text.includes('[Rush: Character]')`, so every
+ * [Rush: Character] card (OP17-003/027/048/069, EB04-011, OP16-089, ST29-014, ST32-005 …) was
+ * saved with full [Rush] and could attack the LEADER on the turn it was played. Re-deriving the
+ * printed-keyword flags from the snapshot's own text fixes those decks in place, with no catalog
+ * fetch and no migration step. See cards/normalization/printedKeywords.ts.
+ *
+ * Only DERIVED fields are repaired. Printed values (power, cost, text itself) are left as
+ * snapshotted: they are what the player built the deck with, and re-deriving them would need the
+ * live catalog.
+ */
 function normalizeSnapshotDefinition(definition: CardDefinition): CardDefinition {
-  if (definition.types.some((type) => /[\/,]/.test(type))) {
+  const repaired: CardDefinition = {
+    ...definition,
+    ...derivePrintedKeywordFlags(definition.text ?? ''),
+  };
+  if (repaired.types.some((type) => /[\/,]/.test(type))) {
     return {
-      ...definition,
-      types: definition.types.flatMap((type) => type.split(/[\/,]+/).map((part) => part.trim()).filter(Boolean)),
+      ...repaired,
+      types: repaired.types.flatMap((type) => type.split(/[\/,]+/).map((part) => part.trim()).filter(Boolean)),
     };
   }
-  return definition;
+  return repaired;
 }
 
 export function resolveLeaderDonDeckSize(leader: CardDefinition, fallback: number): number {

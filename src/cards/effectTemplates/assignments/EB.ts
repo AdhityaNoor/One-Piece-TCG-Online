@@ -530,7 +530,16 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'EB02-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { turn: 'your' } }] } },
 
   // EB02-006 — [Activate: Main] [Once Per Turn] If Leader {Land of Wano} or [Portgas.D.Ace], give up to 1 rested DON!! to your Leader.
-  { cardNumber: 'EB02-006', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Land of Wano' }, { kind: 'leaderName', name: 'Portgas.D.Ace' }] }], functions: [{ fn: 'giveDonControllerLeader', count: 1 }] } },
+  // EB02-006 Yamato — "[Activate: Main] [Once Per Turn] If your Leader has the {Land of Wano}
+  //   type or is [Portgas.D.Ace], give up to 1 rested DON!! card to 1 of your Leader. Then, this
+  //   Character gains [Rush] during this turn."
+  //   The [Rush] half was missing: the card DATA carried hasRush (the old substring parse), so
+  //   the Character rushed unconditionally and the curation looked complete. With the printed
+  //   flag corrected, the grant has to be here — "Then," is an unconditional sequence.
+  { cardNumber: 'EB02-006', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Land of Wano' }, { kind: 'leaderName', name: 'Portgas.D.Ace' }] }], functions: [
+    { fn: 'giveDonControllerLeader', count: 1 },
+    { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' },
+  ] } },
 
   // EB02-003 — [DON!! x2] [Opponent's Turn] +2000 power (continuous); [On Play] if Leader {Straw Hat Crew}: give up to 1 rested DON!! to your Leader or 1 Character.
   {

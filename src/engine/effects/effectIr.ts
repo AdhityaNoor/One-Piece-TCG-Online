@@ -272,7 +272,10 @@ export type EffectOp =
   | ({ op: 'scheduleMoveSourceToBottomDeckAtEndOfBattle' } & EffectOpSequenceGate)
   | ({ op: 'scheduleMoveInstanceToBottomDeckAtEndOfBattle'; fromVar?: string; index?: number } & EffectOpSequenceGate)
   | ({ op: 'scheduleMoveInstanceToBottomDeckAtEndOfTurn'; fromVar?: string; index?: number } & EffectOpSequenceGate)
-  | ({ op: 'scheduleTrashControllerCharacterAtEndOfTurn'; typeIncludes?: string } & EffectOpSequenceGate)
+  // `fromVar` carries the Character the player PICKED when the ability resolved (the end-of-turn
+  // step itself cannot prompt — see phases/phaseStepResult.ts). Omitted, or pointing at a card
+  // that has since left the field, the end-of-turn step falls back to the first match.
+  | ({ op: 'scheduleTrashControllerCharacterAtEndOfTurn'; typeIncludes?: string; fromVar?: string } & EffectOpSequenceGate)
   | ({ op: 'scheduleReturnDonToMatchOpponentAtEndOfTurn' } & EffectOpSequenceGate)
   | ({ op: 'scheduleMoveDeckTopToLifeAtEndOfTurn'; requiresLeaderType?: string } & EffectOpSequenceGate)
   | ({ op: 'trashHandDownTo'; handSize: number; player?: 'controller' | 'opponent' } & EffectOpSequenceGate)

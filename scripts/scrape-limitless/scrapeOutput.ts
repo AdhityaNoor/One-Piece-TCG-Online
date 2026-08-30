@@ -15,6 +15,7 @@ import { mkdir, rename, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import type { Attribute, CardCategory, CardDefinition, Color } from '../../src/engine/state/card';
 import { parseEffect } from '../../src/cards/effectParser';
+import { derivePrintedKeywordFlags } from '../../src/cards/normalization/printedKeywords';
 import { CARDS_DIR, IMAGE_CDN, INDEX_FILE, OUTPUT_DIR, PROVIDER, SCRAPE_SCHEMA_VERSION } from './config';
 import type { ImageResult } from './imageDownloader';
 import type { LimitlessCard, LimitlessLangData, LimitlessPrint, LimitlessPrintImage, ParsedCardPage } from './types';
@@ -85,19 +86,11 @@ function buildDefinition(cardNumber: string, en: ParsedCardPage, enName: string 
     life: en.life,
     counter: en.counter,
     hasTrigger: text.includes('[Trigger]'),
-    // [Rush: Character] is a DIFFERENT keyword from [Rush]: it only lets the card
-    // attack CHARACTERS on the turn it is played, never the Leader. Folding it into
-    // hasRush granted unrestricted Rush — strictly more permissive than the card.
-    // The engine models it as the continuous keyword
-    // `canAttackCharactersWhileSummoningSick`, granted by a curated onEnterPlay
-    // ability, so it must NOT be a printed-keyword flag here. Note '[Rush: Character]'
-    // does not contain the substring '[Rush]', so the plain check below is already
-    // correct on its own.
-    hasRush: text.includes('[Rush]'),
-    hasBlocker: text.includes('[Blocker]'),
-    hasDoubleAttack: text.includes('[Double Attack]'),
-    hasBanish: text.includes('[Banish]'),
-    isUnblockable: text.includes('[Unblockable]'),
+    // Static keyword flags come from the SHARED derivation (src/cards/normalization/
+    // printedKeywords.ts) that the API path and the saved-deck snapshot repair also use —
+    // three copies of `text.includes('[Blocker]')` is how 211 cards ended up with keywords
+    // they only MENTION ("gains [Blocker]", "cannot activate [Blocker]", "[Rush: Character]").
+    ...derivePrintedKeywordFlags(text),
     cardNumber,
     rarity: en.rarity,
   };

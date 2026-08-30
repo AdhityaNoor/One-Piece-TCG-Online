@@ -42,6 +42,17 @@ export function runEndPhaseAndHandoff(state: GameState, defs: CardDefinitionLook
   // [End of Your Turn] triggers (10-2-x) fire before "until end of turn" effects
   // expire and before the turn passes, with each of the ending player's cards as source.
   const eot = fireEndOfTurn(state, endingPlayerId, registry, defs, null);
+  // An [End of Your Turn] ability that needs a player decision SUSPENDS the End Phase here:
+  // the turn must not hand over, "until end of turn" effects must not expire, and the delayed
+  // effects below must not run, while the ending player still owes an answer. The choice is on
+  // `state.pendingChoices`, so advanceAutomaticPhases stops on it and re-enters this phase (still
+  // `end`) once it is answered; fireEndOfTurn's per-source claim means the abilities that already
+  // resolved do not fire again. Before this, the prompt was emitted but the turn handed over
+  // regardless — so the effect resolved on the OPPONENT'S turn, computing power, DON!! bonuses
+  // and "your turn" conditions against the wrong active player (37 curated cards prompt here).
+  if (eot.pendingChoices.length > 0) {
+    return { state: eot.state, log: eot.log };
+  }
   const delayed = consumeEndOfTurnDelayedEffects(eot.state, endingPlayerId, defs);
   let working = delayed.state;
 
@@ -117,6 +128,8 @@ export function runEndPhaseAndHandoff(state: GameState, defs: CardDefinitionLook
     ...working,
     players,
     continuousEffects,
+    // This End Phase is over; the next one starts with a clean slate of fired abilities.
+    endOfTurnHandledKeys: undefined,
     turnNumber: working.turnNumber + 1,
     activePlayerId: handoffPlayerId,
     pendingExtraTurnPlayerId: takesExtraTurn ? undefined : working.pendingExtraTurnPlayerId,

@@ -1280,7 +1280,7 @@
    "hasBlocker": false,
    "hasDoubleAttack": false,
    "hasBanish": false,
-   "isUnblockable": true,
+   "isUnblockable": false,
    "cardNumber": "ST29-016",
    "rarity": "Common"
   }
