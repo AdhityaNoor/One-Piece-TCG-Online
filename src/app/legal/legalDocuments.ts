@@ -1,25 +1,33 @@
 /**
- * The app's legal documents, imported straight from `docs/legal/*.md`.
+ * The app's legal documents, imported as raw Markdown from `./content/`.
  *
  * WHY THE MARKDOWN FILES ARE THE SOURCE OF TRUTH, and not a copy pasted into
  * a `.tsx`: a legal document that exists twice drifts, and the copy that
- * drifts is always the one nobody is reading when it matters. `docs/legal/`
- * is where the documents are reviewed, diffed, and (eventually) handed to a
- * lawyer; `?raw` makes the shipped page a projection of that file rather
- * than a transcription of it. Editing the Markdown is the only way to change
- * what a player sees.
+ * drifts is always the one nobody is reading when it matters. `?raw` makes
+ * the shipped page a projection of the file rather than a transcription of
+ * it, so editing the Markdown is the only way to change what a player sees.
  *
- * The corollary is that ANYTHING written in those three files is public.
- * Operator-facing notes belong in `docs/legal/README.md` or
- * `docs/legal/RISK-MEMO.md`, neither of which is imported here — RISK-MEMO in
- * particular is an internal exposure assessment and must never be bundled.
+ * WHY `./content/` AND NOT `docs/legal/`, where these files started: anything
+ * the bundle imports has to survive every deploy target's ignore list, and
+ * `.vercelignore`, `.dockerignore` and `.gcloudignore` all exclude `docs/`.
+ * The local build was fine and the Vercel build failed with "Could not
+ * resolve ../../../docs/legal/TERMS.md?raw" — the file simply was not
+ * uploaded. A published document is application content, not documentation,
+ * so it lives in the source tree with the code that renders it.
+ *
+ * That split is now load-bearing in the other direction too: `docs/legal/`
+ * keeps only the material that must NEVER ship — README.md (the operator's
+ * checklist) and RISK-MEMO.md (an internal exposure assessment) — and those
+ * stay excluded from every deploy precisely because `docs/` is ignored.
+ *
+ * The corollary is that ANYTHING written in the three files below is public.
  *
  * `?raw` typing comes from `vite/client` (see src/vite-env.d.ts). Vitest runs
  * through the same Vite pipeline, so these imports resolve in tests too.
  */
-import termsMarkdown from '../../../docs/legal/TERMS.md?raw';
-import privacyMarkdown from '../../../docs/legal/PRIVACY.md?raw';
-import dmcaMarkdown from '../../../docs/legal/DMCA.md?raw';
+import termsMarkdown from './content/TERMS.md?raw';
+import privacyMarkdown from './content/PRIVACY.md?raw';
+import dmcaMarkdown from './content/DMCA.md?raw';
 
 export type LegalDocumentId = 'terms' | 'privacy' | 'dmca';
 

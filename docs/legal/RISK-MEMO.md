@@ -217,7 +217,7 @@ deck lists, ranked ratings, full match action streams, and bug reports
 containing complete battle logs, on MongoDB Atlas, behind a Cloud Run service,
 served from Vercel — and until now you published no privacy policy at all.
 
-The `PRIVACY.md` in this folder fixes the disclosure gap. What it does not fix
+The `PRIVACY.md` shipped with the app fixes the disclosure gap. What it does not fix
 is that you must actually be able to **honour a deletion or export request**.
 Today there is no self-service path and, as far as I can see, no admin tooling
 for it either. If a request arrives, you will be doing it by hand in Atlas.

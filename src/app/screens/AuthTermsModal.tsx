@@ -2,7 +2,7 @@
  * The terms a new account must accept, and the modal that shows them.
  *
  * This modal opens from the sign-up form, which is the one moment consent is
- * actually given — so it shows the REAL documents (docs/legal/TERMS.md,
+ * actually given — so it shows the REAL documents (src/app/legal/content/TERMS.md,
  * PRIVACY.md, DMCA.md) through the same viewer as LegalScreen, not a
  * friendlier summary of them. A player who ticks the box has been shown the
  * text that binds them.

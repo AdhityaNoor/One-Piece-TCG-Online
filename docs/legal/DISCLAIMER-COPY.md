@@ -129,7 +129,7 @@ Put this immediately under the title, above everything else:
 > Ltd., Bandai Namco, Shueisha, Toei Animation, or Eiichiro Oda. All card
 > images, card text, and trademarks are the property of their respective
 > owners. Non-commercial; nothing is sold. Rights holders: see
-> [docs/legal/DMCA.md](docs/legal/DMCA.md).
+> [src/app/legal/content/DMCA.md](src/app/legal/content/DMCA.md).
 ```
 
 ## 8. Wording to avoid

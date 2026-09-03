@@ -4,7 +4,7 @@
 > Ltd., Bandai Namco, Shueisha, Toei Animation, or Eiichiro Oda. All card
 > images, card text, and trademarks are the property of their respective
 > owners. Non-commercial; nothing is sold. Rights holders: see
-> [docs/legal/DMCA.md](docs/legal/DMCA.md).
+> [src/app/legal/content/DMCA.md](src/app/legal/content/DMCA.md).
 
 A web-based One Piece TCG simulator focused first on local single-player hotseat play, with an engine architecture that can later support online multiplayer through an authoritative server.
 

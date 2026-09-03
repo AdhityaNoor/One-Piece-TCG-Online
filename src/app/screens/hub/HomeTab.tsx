@@ -5,6 +5,11 @@
  * as every other hub tab (Play/Decks/Social) instead of sitting on
  * AppShell's flat fill color.
  *
+ * A third column sits to the LEFT of the carousel on lg+ screens: the
+ * community panels (Discord + Ko-fi), see CommunityColumn.tsx. It is
+ * conditional on at least one of those being configured, so the grid falls
+ * back to the original two-column shape when neither is.
+ *
  * The carousel is now wired to the Admin CMS's Banner & News Management
  * section (GET /banners, public/unauthenticated — see
  * multiplayer/net/bannerClient.ts and server/src/banners/publicRoutes.ts):
@@ -19,6 +24,7 @@ import { useNavigationStore } from '../../store/navigationStore';
 import type { NavigationTarget } from '../../store/navigationStore';
 import { fetchActiveBanners } from '../../../multiplayer/net/bannerClient';
 import type { PublicHomeBanner } from '../../../../shared/admin';
+import { CommunityColumn, HAS_COMMUNITY_PANELS } from './CommunityColumn';
 
 interface CarouselSlide {
   image: string | null;
@@ -42,11 +48,30 @@ function toSlide(banner: PublicHomeBanner): CarouselSlide {
 }
 
 export function HomeTab() {
+  // Fixed-width community rail rather than a fraction: its contents are two
+  // third-party widgets rendered at their own intrinsic scale, so a column
+  // that grows with the viewport just adds dead space around them. The
+  // carousel and actions keep their original 3:1 relationship to each other.
+  const columns = HAS_COMMUNITY_PANELS ? 'lg:grid-cols-[15rem_3fr_1fr]' : 'lg:grid-cols-[3fr_1fr]';
+
   return (
     <GameCanvasScreen dense>
-      <div className="h-full min-h-0 space-y-4 overflow-y-auto px-2 py-2 sm:px-3 sm:py-3 lg:grid lg:space-y-0 lg:grid-cols-[3fr_1fr] lg:gap-6 lg:overflow-hidden">
+      <div
+        className={[
+          'h-full min-h-0 space-y-4 overflow-y-auto px-2 py-2 sm:px-3 sm:py-3',
+          'lg:grid lg:space-y-0 lg:gap-6 lg:overflow-hidden',
+          columns,
+        ].join(' ')}
+      >
+        {/* Below lg this is a single stacked column and SOURCE order is what
+            the player reads, so the community rail comes last there: the
+            banner and the play shortcuts are the reason the tab exists. On
+            lg+ the `order` utilities move it to the left of the carousel,
+            which grid honours, so the visual and reading orders can differ
+            without duplicating the markup. */}
         <HomeCarousel />
         <HomeActions />
+        <CommunityColumn />
       </div>
     </GameCanvasScreen>
   );
@@ -81,7 +106,7 @@ function HomeCarousel() {
 
   return (
     <section
-      className="relative min-h-[12rem] flex-shrink-0 overflow-hidden border border-white/10 bg-black/30 shadow-[0_20px_50px_rgba(0,0,0,0.4)] backdrop-blur-md sm:min-h-[15rem] lg:h-full lg:min-h-0"
+      className="relative min-h-[12rem] flex-shrink-0 overflow-hidden lg:order-2 border border-white/10 bg-black/30 shadow-[0_20px_50px_rgba(0,0,0,0.4)] backdrop-blur-md sm:min-h-[15rem] lg:h-full lg:min-h-0"
       aria-roledescription="carousel"
       aria-label="Featured"
     >
@@ -203,7 +228,7 @@ function HomeActions() {
   ];
 
   return (
-    <nav className="flex h-full min-h-0 flex-col" aria-label="Play shortcuts">
+    <nav className="flex h-full min-h-0 flex-col lg:order-3" aria-label="Play shortcuts">
       <div className="pb-3">
         <div className="inline-flex items-center gap-2">
           <span aria-hidden="true" className="h-2 w-2 flex-shrink-0 rounded-full bg-gold shadow-[0_0_10px_rgba(217,164,65,0.65)]" />

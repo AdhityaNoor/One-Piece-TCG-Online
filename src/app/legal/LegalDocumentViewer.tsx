@@ -6,7 +6,7 @@
  * It exists because those two places must show the SAME text. The sign-up
  * form is where consent is actually given, so showing a friendly summary
  * there and the real document elsewhere would mean players agree to one
- * thing and are bound by another. One viewer, one source (docs/legal/*.md),
+ * thing and are bound by another. One viewer, one source (src/app/legal/content/*.md),
  * two frames around it.
  *
  * Owns its own scroll container so the tab strip stays fixed while a long
@@ -109,7 +109,7 @@ function LegalTab({ label, selected, onSelect }: { label: string; selected: bool
 }
 
 /**
- * Development-only nag. These documents ship with `Croix Shadow`-style
+ * Development-only nag. These documents once shipped with bracketed all-caps
  * placeholders that are meaningless to a player and embarrassing in
  * production, and the failure mode is silent — nobody notices a bracketed
  * name in a wall of policy text. legalDocuments.test.ts is the real gate;
@@ -124,7 +124,7 @@ function UnfilledPlaceholderWarning() {
     <div className="mb-5 border border-amber-300/35 bg-amber-500/10 p-3 text-[11px] leading-5 text-amber-100/90">
       <p className="font-bold uppercase tracking-[0.14em]">Not ready to publish — dev only</p>
       <p className="mt-1">
-        {placeholders.length} placeholder{placeholders.length === 1 ? '' : 's'} still unfilled in docs/legal:{' '}
+        {placeholders.length} placeholder{placeholders.length === 1 ? '' : 's'} still unfilled in src/app/legal/content:{' '}
         <span className="font-mono">{placeholders.join(' ')}</span>
       </p>
     </div>

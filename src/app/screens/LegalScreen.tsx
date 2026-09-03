@@ -1,6 +1,6 @@
 /**
  * The Terms of Service, Privacy Policy, and IP & Takedown Policy, rendered
- * from `docs/legal/*.md` (see src/app/legal/legalDocuments.ts for why the
+ * from `src/app/legal/content/*.md` (see src/app/legal/legalDocuments.ts for why the
  * Markdown files are the source of truth rather than a copy in JSX).
  *
  * The screen is only the frame. The tab strip, cross-document links, and
