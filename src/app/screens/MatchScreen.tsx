@@ -27,7 +27,7 @@ import type { GameLogEntry } from '../../engine/logs/logEntry';
 import type { MatchModeTag } from '../../../shared/support';
 import { countAvailableDon, getActingPlayerId, getGlowPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
-import { Button, CardDetailModal, CardImage, GlitterWrap, Modal, ScaleToFit } from '../components';
+import { Button, CardDetailModal, CardImage, CommunityCallout, GlitterWrap, Modal, ScaleToFit } from '../components';
 import {
   ActionBar,
   ActionLogDock,
@@ -2814,6 +2814,14 @@ function VictoryScreen({ winnerId, winnerName, reason, onReturn }: { winnerId: s
         <Button variant="primary" size="lg" className="pointer-events-auto mt-8 min-w-[18rem]" onClick={onReturn}>
           Return to Main Menu
         </Button>
+        {/* Placed AFTER the return button on purpose: the player came here to
+            leave, so the way out stays the first thing they reach, and the ask
+            sits below it rather than in front of it. This is the highest-intent
+            moment in the app — a match just ended — which is why the prompt is
+            here and not on a menu nobody opens twice.
+            pointer-events-auto because the section's ancestors disable pointer
+            events for the victory canvas underneath. */}
+        <CommunityCallout className="pointer-events-auto mt-6 w-[min(30rem,90vw)]" />
       </section>
     </main>
   );

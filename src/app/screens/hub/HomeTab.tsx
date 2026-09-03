@@ -48,11 +48,12 @@ function toSlide(banner: PublicHomeBanner): CarouselSlide {
 }
 
 export function HomeTab() {
-  // Fixed-width community rail rather than a fraction: its contents are two
-  // third-party widgets rendered at their own intrinsic scale, so a column
-  // that grows with the viewport just adds dead space around them. The
-  // carousel and actions keep their original 3:1 relationship to each other.
-  const columns = HAS_COMMUNITY_PANELS ? 'lg:grid-cols-[15rem_3fr_1fr]' : 'lg:grid-cols-[3fr_1fr]';
+  // Fixed-width community rail rather than a fraction: it holds Discord's
+  // fixed-layout widget, which clips its own member rows when narrow and
+  // gains nothing from growing with the viewport. 24rem is comfortably past
+  // that clip point. The carousel and actions keep their original 3:1
+  // relationship to each other.
+  const columns = HAS_COMMUNITY_PANELS ? 'lg:grid-cols-[24rem_3fr_1fr]' : 'lg:grid-cols-[3fr_1fr]';
 
   return (
     <GameCanvasScreen dense>

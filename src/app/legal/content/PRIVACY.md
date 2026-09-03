@@ -13,9 +13,9 @@ Last updated: 3 September 2026
   play.
 - **No advertising. No analytics. No trackers. No cookies of our own. Your
   data is never sold or shared for marketing.**
-- The home screen offers a Discord and a Ko-fi panel. Both are **off until you
-  click "Load widget"**, and nothing is requested from either company before
-  you do.
+- The home screen embeds Discord's server widget and shows Ko-fi's own button
+  image. Loading it shows those two companies your IP address, and Discord's
+  widget may set its own cookies. See § 5.
 - Full match recordings used to improve the computer opponent are **opt-out,
   and every player in a match must agree** before one is stored.
 - You can export or delete your data by emailing us.
@@ -96,17 +96,16 @@ is not transmitted to us except where noted:
 | `optcg.deck.*`, `optcg.deckIndex`, `optcg.lastUsedDeck` | Local copies of your decks, so the deck builder works offline and before you sign in | Yes — functional |
 | `optcg.tutorial` | Remembers you have seen the tutorial | Yes — functional |
 | Cache Storage (card images) | Avoids re-downloading card art on every visit | Yes — performance of the service you requested |
-| `optcg.embedConsent.discord`, `optcg.embedConsent.kofi` | Remembers that you chose to load that community widget, so you are not asked again every visit | Only written if you click "Load widget" |
 
-**We set no cookies, and we run no analytics, advertising, or fingerprinting
-scripts of any kind.** Everything above is first-party and strictly necessary
-for features you have asked for, which is why you are not shown a consent
-banner on arrival.
+**We set no cookies of our own, and we run no analytics, advertising,
+fingerprinting, or tracking scripts of any kind.** Everything in the table
+above is first-party and strictly necessary for features you have asked for.
 
-The one exception is the two community widgets described in § 5, and they are
-the reason there is still no banner: they load nothing, and therefore need no
-consent, until you click to load them. The click *is* the consent, asked at
-the point of use rather than as a blanket question on your first visit.
+Two third parties are loaded by the home screen — the Discord widget and the
+Ko-fi button described in § 5. We do not use them to track you and we learn
+nothing from them, but Discord's widget is that company's own page and may set
+cookies or storage **in its own context** when it loads. We cannot read that
+storage and it is not ours.
 
 You can clear all of it through your browser's "clear site data" — you will be
 signed out and local decks not synced to an account will be lost.
@@ -168,41 +167,36 @@ The card database used by the client is fetched from a third-party card data
 source (`optcgapi.com`). Requesting card data exposes your IP address to that
 host, as visiting any website does. We send them nothing about your account.
 
-### Community widgets (Discord and Ko-fi) — opt-in
+### Community widgets (Discord and Ko-fi)
 
-The home screen can show two panels served by other companies:
+The home screen embeds two panels served by other companies:
 
 | Widget | Host | What it is |
 | --- | --- | --- |
-| Discord server widget | Discord (`discord.com`) | The live member list and join button for our server |
-| Ko-fi donation widget | Ko-fi (`ko-fi.com`) | The donation form for voluntary hosting contributions |
+| Discord server widget | Discord (`discord.com`) | An embedded page: the live member list and join button for our server |
+| Ko-fi button | Ko-fi (`storage.ko-fi.com`) | Just an image — Ko-fi's own button, linking out to our Ko-fi page |
 
-**Neither loads until you click "Load widget" on that panel.** Before you
-click, no request of any kind is made to Discord or Ko-fi, and your visit is
-invisible to both.
-
-Once you load one, it is an embedded page from that company, so it works like
-visiting their site: they receive your **IP address**, your browser's
-**User-Agent**, and the fact that you loaded it, and they may set their own
-cookies or storage in their own context. What they do with that is governed by
-**their** privacy policy, not ours — see
+**Both load with the home screen**, and both therefore show that company your
+**IP address**, your browser's **User-Agent**, and the fact that the page
+loaded — the same as visiting any website. What they do with that is governed
+by **their** privacy policy, not ours: see
 [Discord](https://discord.com/privacy) and [Ko-fi](https://ko-fi.com/privacy).
-We receive nothing back from them and we send them nothing about your account:
-they are not told who you are, and the widget does not know you are signed in.
 
-We limit them where we can. Each frame is sandboxed and sent with a
-`no-referrer` policy, so neither company is told which page of ours you were
-on, and neither can read the rest of the app or anything stored in it.
+The two differ in how much they can do. Discord's widget is a full embedded
+page and may set cookies or storage **in its own context**, which we cannot
+read. Ko-fi's is only an image file, so it can do nothing but be fetched; you
+reach Ko-fi's actual donation page only if you click the button.
 
-Your choice is remembered per widget in your browser (see § 2), so loading
-Discord does not load Ko-fi. You can undo it: the panel's **Unload** control
-removes the frame and forgets the choice, and clearing your site data does the
-same. Each panel also carries a plain link out, so you can reach our Discord
-or our Ko-fi page without loading anything.
+We receive nothing back from either, and we send them nothing about your
+account: neither is told who you are, and neither knows you are signed in. We
+do not use them for analytics.
 
 Donations through Ko-fi are handled entirely by Ko-fi and its payment
-processors. We never see your card details. See § 9 of the Terms — a donation
-is a gift and buys nothing in the game.
+processors, on their site. We never see your card details. See § 9 of the
+Terms — a donation is a gift and buys nothing in the game.
+
+If you would rather not load them, a content blocker will stop both; nothing
+else on the home screen depends on them.
 
 Other than the above, we disclose data only:
 

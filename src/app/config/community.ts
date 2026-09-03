@@ -1,71 +1,92 @@
 /**
- * The project's outbound community links, in one place.
+ * The project's community links, read from the environment.
  *
- * WHY A CONFIG MODULE: the Discord server ID and the Ko-fi handle are the
- * only two values in this feature that are neither derivable nor stable
- * across forks. Everything else (embed URL shapes, theme parameters) is
- * mechanical. Keeping the two IDs here means a fork or a server migration is
- * a one-line change and never a hunt through JSX.
+ * WHY ENV AND NOT CONSTANTS: these identify one particular Discord server and
+ * one particular Ko-fi page, so a fork, a staging deploy or a second server
+ * should not need a code change — and the repo is public, so the committed
+ * source should not name a specific operator's donation page. They are not
+ * secrets (a Discord server ID is visible to every member and the Ko-fi
+ * handle is a public page name), but they are deployment configuration, which
+ * is what env is for.
  *
- * These are PUBLIC identifiers — a Discord server ID is visible to anyone in
- * the server and the Ko-fi handle is the public page name. Neither is a
- * secret, so neither belongs in an env var; committing them keeps a static
- * Vercel build reproducible with no build-time configuration.
+ * Vite inlines `import.meta.env.VITE_*` at BUILD time, so these must be set
+ * wherever the bundle is built — `.env.local` for local dev, and the hosting
+ * provider's environment variables for a deployed build. A value added after
+ * a build does not appear until the next build.
  *
- * `null` on either ID disables that panel entirely rather than rendering a
- * broken embed — see CommunityColumn.
+ * An unset value disables that panel rather than rendering a broken embed —
+ * see CommunityColumn, which drops the whole rail when both are unset. That
+ * is deliberate: a fork with no env set gets a clean two-column Home tab, not
+ * an error.
  */
+
+/** Empty strings read as unset — an env var present but blank is not a value. */
+function envValue(raw: string | undefined): string | null {
+  const trimmed = raw?.trim();
+  return trimmed ? trimmed : null;
+}
 
 /**
- * Discord's numeric server ("guild") ID.
+ * Discord's numeric server ("guild") ID — `VITE_DISCORD_SERVER_ID`.
  *
- * The widget iframe ONLY works if the server has
+ * The widget iframe only works if the server has
  * Server Settings -> Widget -> "Enable Server Widget" turned on. With it off,
- * discord.com/widget returns an error page inside the frame, which is why
- * the panel keeps its own invite link independent of the embed.
+ * Discord serves the widget's header and footer around an empty body and its
+ * API answers `{"message": "Widget Disabled", "code": 50004}` — which is the
+ * fastest way to tell that apart from a wrong ID, since a wrong ID answers
+ * `10004 Unknown Guild` instead.
  */
-export const DISCORD_SERVER_ID: string | null = '1544726019280339024';
+export const DISCORD_SERVER_ID: string | null = envValue(import.meta.env.VITE_DISCORD_SERVER_ID);
 
-/** The public invite. Used for the panel's own link, and as the fallback if the widget cannot load. */
-export const DISCORD_INVITE_URL: string | null = 'https://discord.gg/qWgnBykUW';
+/**
+ * Public Discord invite — `VITE_DISCORD_INVITE_URL`, e.g. https://discord.gg/xxxx.
+ *
+ * Separate from the server ID rather than derived from it: an invite is a
+ * revocable, optionally expiring token that an admin can rotate at any time,
+ * while the server ID never changes. It is also needed in places that show no
+ * widget at all (the victory screen, the credits page), where there is no
+ * embed to carry Discord's own join link.
+ */
+export const DISCORD_INVITE_URL: string | null = envValue(import.meta.env.VITE_DISCORD_INVITE_URL);
 
-/** Ko-fi page handle — the path segment after ko-fi.com/. */
-export const KOFI_USERNAME: string | null = 'croixshadow';
+/** Ko-fi page handle — `VITE_KOFI_USERNAME`, the path segment after ko-fi.com/. */
+export const KOFI_USERNAME: string | null = envValue(import.meta.env.VITE_KOFI_USERNAME);
 
-/** Brand-matched panel colours, kept next to the IDs so the two embeds theme together. */
-const KOFI_BUTTON_COLOR = 'd9a441'; // op-gold, matching the rest of the hub chrome
+/**
+ * Which of Ko-fi's official button images to use — `VITE_KOFI_BUTTON_VARIANT`.
+ *
+ * Ko-fi serves its button as `kofi1.png` .. `kofi6.png`, one per colour
+ * variant, from their CDN — the same assets their own button generator hands
+ * out. Defaults to 3 (red), closest to the hub's accent. Anything outside
+ * 1..6 would 404, so an out-of-range value falls back rather than shipping a
+ * broken image.
+ */
+function kofiButtonVariant(): number {
+  const parsed = Number(envValue(import.meta.env.VITE_KOFI_BUTTON_VARIANT));
+  return Number.isInteger(parsed) && parsed >= 1 && parsed <= 6 ? parsed : 3;
+}
 
 /**
  * Discord's server widget. `theme=dark` matches the hub; the frame shows the
- * online member list and a join button rendered entirely by Discord.
+ * online member list and join button, rendered entirely by Discord.
  */
 export function discordWidgetUrl(serverId: string): string {
   return `https://discord.com/widget?id=${encodeURIComponent(serverId)}&theme=dark`;
 }
 
 /**
- * Ko-fi's embeddable donation panel.
+ * Ko-fi's own button asset, served by Ko-fi.
  *
- * Query parameters are Ko-fi's own, not ours:
- *   hidefeed=true    — drop the supporter feed, which needs far more vertical
- *                      space than this column has
- *   widget=true      — the compact embed layout rather than the full page
- *   embed=true       — tells Ko-fi it is framed, so it drops its own chrome
- *   preview=true     — renders the panel without requiring an interaction first
+ * Used as a plain <img> inside a link rather than through Ko-fi's
+ * `Widget_2.js`, which draws the identical button but needs a page ID we do
+ * not have and injects DOM outside React's control. The `v` query parameter
+ * is Ko-fi's cache buster and is part of the published URL.
  */
-export function kofiWidgetUrl(username: string): string {
-  const params = new URLSearchParams({
-    hidefeed: 'true',
-    widget: 'true',
-    embed: 'true',
-    preview: 'true',
-    'text-color': 'ffffff',
-    'button-color': KOFI_BUTTON_COLOR,
-  });
-  return `https://ko-fi.com/${encodeURIComponent(username)}/?${params.toString()}`;
+export function kofiButtonImageUrl(): string {
+  return `https://storage.ko-fi.com/cdn/kofi${kofiButtonVariant()}.png?v=6`;
 }
 
-/** The public Ko-fi page, for the panel's own link and the no-consent fallback. */
+/** The public Ko-fi page. The rail links here rather than embedding Ko-fi's form — see CommunityColumn. */
 export function kofiPageUrl(username: string): string {
   return `https://ko-fi.com/${encodeURIComponent(username)}`;
 }

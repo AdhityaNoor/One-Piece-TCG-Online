@@ -4,6 +4,10 @@
  * its own since it isn't a pushed screen anymore (embedded under the
  * universal header).
  *
+ * The Discord server widget sits under the player search: this tab is where
+ * a player goes to find other people, and the server is where most of them
+ * actually are. It renders nothing when VITE_DISCORD_SERVER_ID is unset.
+ *
  * Avatar thumbnails resolve equippedCosmetics.avatar (a server catalog id
  * like 'avatar_luffy', joined server-side in profileService/routes.ts) back
  * to the Settings picker's local asset via avatarCatalogIdToOptionId — same
@@ -12,7 +16,7 @@
  */
 import { useEffect, useState } from 'react';
 import type { ReportPlayerRequest } from '../../../../shared/profile';
-import { Button, GameCanvasScreen, Modal } from '../../components';
+import { Button, DiscordServerWidget, GameCanvasScreen, Modal } from '../../components';
 import { avatarCatalogIdToOptionId, resolveAvatarUrl } from '../../lib/avatars';
 import { isBackendConfigured } from '../../../multiplayer/net/backendConfig';
 import { useAuthStore } from '../../store/authStore';
@@ -36,7 +40,16 @@ export function SocialTab() {
         <EmptyState title="Sign In Required" body="Social features need a signed-in account, not offline mode." />
       ) : (
         <div className="h-full min-h-0 space-y-4 overflow-y-auto px-1 py-1 lg:grid lg:gap-4 lg:space-y-0 lg:grid-cols-[20rem_minmax(0,1fr)] lg:overflow-hidden">
-          <PlayerSearch />
+          {/* Search and the Discord widget share the left column: both are
+              "find people" tools, and the friends list is what needs the
+              width. On lg the column is a flex box so the widget can take
+              whatever height search leaves; below lg it stacks and needs an
+              explicit height, since a flex-1 child of an auto-height column
+              collapses to nothing. */}
+          <div className="flex min-h-0 flex-col gap-3 lg:h-full">
+            <PlayerSearch />
+            <DiscordServerWidget className="h-[22rem] w-full lg:h-auto lg:min-h-[16rem] lg:flex-1" />
+          </div>
           <FriendsPanel />
         </div>
       )}

@@ -3,8 +3,13 @@
  *
  * Version is stamped at build time from package.json via __APP_VERSION__
  * (see vite.config.ts). No runtime fetch needed.
+ *
+ * The community callout sits between the credit columns and the copyright
+ * line: this page is already the "who made this and why" surface, so the ask
+ * reads as part of the attribution rather than as an interruption. It renders
+ * nothing when neither community link is configured.
  */
-import { GameCanvasScreen } from '../components';
+import { CommunityCallout, GameCanvasScreen } from '../components';
 import { useNavigationStore } from '../store/navigationStore';
 
 interface CreditSection {
@@ -124,6 +129,8 @@ export function CreditsScreen() {
             </div>
           </div>
         </section>
+
+        <CommunityCallout className="w-full max-w-5xl" heading="Enjoying this project?" />
 
         <p className="text-[10px] uppercase tracking-[0.18em] text-white/25">
           (C) {new Date().getFullYear()} - Fan Project - v{__APP_VERSION__} Alpha Build
