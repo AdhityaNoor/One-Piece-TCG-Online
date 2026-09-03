@@ -33,6 +33,7 @@ import {
 import { useAuthStore } from './authStore';
 import { useMatchStore, PLAYER_A_ID, PLAYER_B_ID } from './matchStore';
 import { useNavigationStore } from './navigationStore';
+import { useSettingsStore } from './settingsStore';
 
 export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error';
 
@@ -128,17 +129,17 @@ export const useOnlineStore = create<OnlineState>((set, get) => ({
 
   async hostRoom(deck) {
     void deck;
-    return connect(set, 'host', () => createRoom(requireToken()));
+    return connect(set, 'host', () => createRoom(requireToken(), sharesMatchData()));
   },
 
   async joinById(roomId, deck) {
     void deck;
-    return connect(set, 'guest', () => joinRoomById(requireToken(), roomId));
+    return connect(set, 'guest', () => joinRoomById(requireToken(), roomId, sharesMatchData()));
   },
 
   async joinByCode(code, deck) {
     void deck;
-    return connect(set, 'guest', () => joinRoomByCode(requireToken(), code));
+    return connect(set, 'guest', () => joinRoomByCode(requireToken(), code, sharesMatchData()));
   },
 
   ready(deck) {
@@ -197,6 +198,21 @@ export const useOnlineStore = create<OnlineState>((set, get) => ({
     });
   },
 }));
+
+/**
+ * This seat's answer to the "Share match data" setting, read at JOIN time.
+ *
+ * Read here rather than inside gameClient so the network layer keeps no
+ * dependency on app stores, and read at join rather than at match end because
+ * the server needs it before it decides whether to attach a recorder at all —
+ * a recording cannot be un-made after the fact.
+ *
+ * `!== false` rather than a truthiness check: the stored value is undefined on
+ * a profile saved before the setting existed, and the shipped default is on.
+ */
+function sharesMatchData(): boolean {
+  return useSettingsStore.getState().contributeMatchData !== false;
+}
 
 function requireToken(): string {
   const token = useAuthStore.getState().token;

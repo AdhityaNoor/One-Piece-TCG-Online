@@ -2,6 +2,7 @@ export * from './HubScreen';
 export * from './LandingScreen';
 export * from './SplashScreen';
 export * from './CreditsScreen';
+export * from './LegalScreen';
 export * from './SettingsScreen';
 export * from './DebugToolsScreen';
 export * from './PlayTestScreen';

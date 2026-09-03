@@ -11,6 +11,8 @@ import { analyzeLethalLine, prematureEndMainPenalty } from './lethalLineAnalyzer
 import { shouldPrioritizeLethal } from '../evaluation/lethalEstimator';
 import { analyzeAttackTrade } from '../evaluation/attackTradeEvaluator';
 import { actionShapingFor, getEvaluatorWeights } from '../evaluation/weights';
+import { actionFeatureContextFor } from '../evaluation/actionFeatures';
+import { policyPriorBonus } from '../evaluation/policyPrior';
 
 export interface StrategicScoreResult {
   score: number;
@@ -34,15 +36,28 @@ export function scoreWithStrategy(
   }
 
   const raw = scoreActionStrategic(state, action, playerId, defs, registry, ctx, createActionId);
+  const weights = getEvaluatorWeights();
   // Per-action-type shaping (evaluation/weights.ts). Identity by default, so
   // this is a no-op until a fitted or tuned set says otherwise.
-  const shaping = actionShapingFor(getEvaluatorWeights(), action.type);
-  const base = raw * shaping.scale + shaping.bias;
+  const shaping = actionShapingFor(weights, action.type);
+  // The fitted action prior, added AFTER shaping so its `strength` stays in the
+  // evaluator's own score units rather than being rescaled by a per-type knob.
+  // Absent by default — see evaluation/policyPrior.ts for why it stays off
+  // until the arena says otherwise.
+  const prior = weights.policyPrior
+    ? policyPriorBonus(
+        weights.policyPrior,
+        actionFeatureContextFor(state, defs, registry, playerId),
+        action,
+      )
+    : 0;
+  const base = raw * shaping.scale + shaping.bias + prior;
   const trace = [
     `mode:${ctx.mode}`,
     `utility:${ctx.objective.utility.toFixed(1)}`,
     `lethal:${ctx.objective.currentLethalProbability.toFixed(0)}%`,
     `leader:${ctx.leader.description}`,
+    ...(prior !== 0 ? [`prior:${prior.toFixed(2)}`] : []),
   ];
 
   return { score: base, strategic: ctx, trace };

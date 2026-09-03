@@ -8,6 +8,11 @@
  * GameRoom.onAuth rejects anything without a valid token, so an
  * unauthenticated client can never occupy a seat.
  *
+ * Privacy: every join carries this seat's `contributeMatchData` answer. It is a
+ * required parameter rather than something read from a store here, so that the
+ * layer holding the setting is the one that decides, and a caller cannot join
+ * without having answered the question.
+ *
  * Room list: `listOpenRooms` queries Colyseus matchmaking for real, currently
  * open rooms (this REPLACES the old locally-generated mock lobby). Each room's
  * non-secret metadata (host name, code, seat count) comes from the server's
@@ -47,14 +52,14 @@ async function getAvailableRooms(): Promise<AvailableRoom[]> {
 }
 
 /** Host a new match room. The server mints the shareable roomCode. */
-export async function createRoom(token: string): Promise<Room> {
-  const options: JoinOptions = { token };
+export async function createRoom(token: string, contributeMatchData: boolean): Promise<Room> {
+  const options: JoinOptions = { token, contributeMatchData };
   return client().create(GAME_ROOM_NAME, options);
 }
 
 /** Join a specific room by its Colyseus roomId (from the lobby list). */
-export async function joinRoomById(token: string, roomId: string): Promise<Room> {
-  const options: JoinOptions = { token };
+export async function joinRoomById(token: string, roomId: string, contributeMatchData: boolean): Promise<Room> {
+  const options: JoinOptions = { token, contributeMatchData };
   return client().joinById(roomId, options);
 }
 
@@ -62,12 +67,12 @@ export async function joinRoomById(token: string, roomId: string): Promise<Room>
  * Join by the short human code the host shares. Resolves the code to a roomId
  * via matchmaking metadata; falls back to treating the input as a raw roomId.
  */
-export async function joinRoomByCode(token: string, roomCode: string): Promise<Room> {
+export async function joinRoomByCode(token: string, roomCode: string, contributeMatchData: boolean): Promise<Room> {
   const c = client();
   const code = roomCode.trim().toUpperCase();
   const available = await getAvailableRooms().catch(() => []);
   const match = available.find((r) => (r.metadata as { roomCode?: string } | undefined)?.roomCode === code);
-  const options: JoinOptions = { token, roomCode: code };
+  const options: JoinOptions = { token, roomCode: code, contributeMatchData };
   if (match) return c.joinById(match.roomId, options);
   return c.joinById(code, options);
 }

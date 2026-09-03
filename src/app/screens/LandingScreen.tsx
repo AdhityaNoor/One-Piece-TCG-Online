@@ -26,7 +26,7 @@
  * exists to create.
  */
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { BrandLogo, Button, GameCanvasScreen, LandingBackdrop } from '../components';
+import { BrandLogo, Button, FanProjectDisclaimerLine, GameCanvasScreen, LandingBackdrop } from '../components';
 import { useAuthStore } from '../store/authStore';
 import { isBackendConfigured } from '../../multiplayer/net/backendConfig';
 import { AuthTermsModal, REQUIRED_TERMS } from './AuthTermsModal';
@@ -85,6 +85,10 @@ export function LandingScreen() {
           <BrandLogo />
           <nav className="relative z-10 flex w-full flex-col items-center gap-3" aria-label="Landing">
             <StartButton onClick={() => goTo('login')} />
+            {/* Front door of the front door: the title stage is what a first-time
+                visitor lands on and what a link preview shows, so the disclaimer
+                has to be here too, not only on the form behind it. */}
+            <FanProjectDisclaimerLine className="max-w-[34rem] px-4 pt-2" onOpenLegal={() => setTermsOpen(true)} />
           </nav>
         </div>
       ) : (
@@ -239,6 +243,15 @@ export function LandingScreen() {
                     </Button>
                   </div>
                 )}
+
+                {/*
+                  The landing screen is the app's front door and, for anyone
+                  who never signs up, the only screen they will ever see — so
+                  the fan-project disclaimer lives here rather than only
+                  behind the account wall. It opens the same modal as the
+                  sign-up checkbox, which now carries the full documents.
+                */}
+                <FanProjectDisclaimerLine className="border-t border-white/10 pt-3.5" onOpenLegal={() => setTermsOpen(true)} />
               </div>
             </AuthCard>
           </div>

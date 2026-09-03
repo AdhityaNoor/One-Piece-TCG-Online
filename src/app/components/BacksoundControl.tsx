@@ -433,9 +433,14 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
             </div>
           </div>
           {/*
-            Recording finished VS CPU matches is on by default, so the control
-            that turns it off has to be somewhere a player can actually find.
-            A setting that exists only in localStorage is not a choice.
+            Recording finished matches is on by default, so the control that
+            turns it off has to be somewhere a player can actually find. A
+            setting that exists only in localStorage is not a choice.
+
+            This value now travels with the online room join as well (see
+            onlineStore.sharesMatchData and GameRoom's joint-consent rule), so
+            the copy below can honestly say "and online matches". It could not
+            before: the server recorded every finished room regardless.
           */}
           <div className="mt-4 border-t border-white/10 pt-3">
             <p className={`mb-2 ${SETTINGS_PANEL_TITLE}`}>Privacy</p>
@@ -446,9 +451,10 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
                 onToggle={() => setContributeMatchData(!contributeMatchData)}
               />
               <p className="px-1 text-[10px] leading-relaxed text-white/45">
-                Sends finished VS CPU matches — the moves played, the decks used and the
-                result — so the CPU can be trained against real games. Never your account
-                details. Off stops recording immediately; nothing is kept for later.
+                Sends finished VS CPU and online matches — the moves played, the decks used
+                and the result — so the CPU can be trained against real games. Never your
+                account details. Off stops recording immediately; nothing is kept for later.
+                In an online match, turning this off stops the recording for both players.
               </p>
             </div>
           </div>

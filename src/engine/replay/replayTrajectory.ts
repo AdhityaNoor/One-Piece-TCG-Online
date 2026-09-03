@@ -56,6 +56,15 @@ export interface ReplayStep {
    * Filled in once the whole trajectory is replayed and the winner is known.
    */
   outcomeForActor: number;
+  /**
+   * Whatever `ReplayOptions.annotateDecision` returned for this step, verbatim.
+   *
+   * Exists so the training export can attach things this layer must not know
+   * about — the enumerated alternatives, AI feature vectors — without the
+   * replay engine growing a dependency on src/ai. Undefined when no annotator
+   * was supplied, or when the annotator threw.
+   */
+  annotation?: unknown;
 }
 
 export type ReplayFailureReason =
@@ -96,6 +105,21 @@ export interface ReplayOptions {
    * steps keep -1 and trainableSteps() drops them.
    */
   countLegalActions?: (state: GameState, playerId: string) => number;
+  /**
+   * Attach caller-defined data to each decision, computed from the state the
+   * actor faced.
+   *
+   * The training pipeline needs the actions the actor did NOT take: "they
+   * played this card" is only a preference if you know what else was on the
+   * table. Enumerating those needs the AI's legal-action generator and its
+   * feature extractor, neither of which belongs in the engine — so the caller
+   * passes a function instead and this layer stays generic.
+   *
+   * Throwing is treated as "no annotation" rather than a replay failure: an
+   * annotator is an observer, and a bug in one must not be able to invalidate
+   * an otherwise perfectly reconstructed match.
+   */
+  annotateDecision?: (state: GameState, action: GameAction, playerId: string) => unknown;
   /**
    * The SAME repair the live game applied to its card definitions before
    * handing them to the engine (cards/normalization/engineDefinition.ts).
@@ -244,6 +268,15 @@ export function replayTrajectory(trajectory: MatchTrajectory, options: ReplayOpt
       }
     }
 
+    let annotation: unknown;
+    if (options.annotateDecision) {
+      try {
+        annotation = options.annotateDecision(before, action, action.playerId);
+      } catch {
+        annotation = undefined;
+      }
+    }
+
     // Capture the decision BEFORE applying it — the model sees the position it
     // was choosing from, redacted to the seat that was choosing.
     steps.push({
@@ -256,6 +289,7 @@ export function replayTrajectory(trajectory: MatchTrajectory, options: ReplayOpt
       legalActionCount,
       decisionMs: recorded.decisionMs,
       outcomeForActor: 0.5,
+      annotation,
     });
 
     state = executeAction(before, action, defs, options.registry).state;

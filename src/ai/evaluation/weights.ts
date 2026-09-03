@@ -58,6 +58,8 @@ export const SHAPED_ACTION_TYPES = [
 
 export type ShapedActionType = (typeof SHAPED_ACTION_TYPES)[number];
 
+import type { PolicyPriorModel } from './policyPrior';
+
 export interface EvaluatorWeights {
   // --- Life pressure (matchObjective.ts) ---------------------------------
   /**
@@ -154,6 +156,17 @@ export interface EvaluatorWeights {
    * ~0.1ms instead of ~5.5ms per leaf.
    */
   useThreatModel?: boolean;
+
+  /**
+   * A prior over actions, fitted to recorded play (see evaluation/policyPrior.ts
+   * and scripts/ai-sim/fitPolicy.ts).
+   *
+   * Absent by default. It is the one knob here whose training data comes from
+   * outside this codebase, so it gets the same rule as every other fitted
+   * artifact in this file: it ships only after winning in the arena, never on
+   * its held-out accuracy.
+   */
+  policyPrior?: PolicyPriorModel;
 }
 
 /**

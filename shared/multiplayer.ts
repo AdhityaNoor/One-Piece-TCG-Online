@@ -46,6 +46,18 @@ export interface JoinOptions {
   token: string;
   /** Short human-shareable code when joining a specific room by id. */
   roomCode?: string;
+  /**
+   * This seat's answer to the "Share match data" privacy setting.
+   *
+   * The setting has always existed client-side, but it only ever gated the VS
+   * CPU upload — online matches were recorded by the server regardless, which
+   * made the toggle a promise the product did not keep. It travels with the
+   * join so the room knows each seat's answer before a match can start.
+   *
+   * Omitted is treated as `true`, matching the client default, so an older
+   * build that does not send it behaves exactly as it does today.
+   */
+  contributeMatchData?: boolean;
 }
 
 // ---- client -> server messages ---------------------------------------------

@@ -13,8 +13,14 @@
  * login, which was confusing. settingsStore.username/avatarId still exist
  * as the passive header/offline-mode fallback (see AppHeader.tsx), just
  * with no editor of their own.
+ *
+ * The Legal section at the bottom is the app's only permanent, always-
+ * reachable route to the Terms, Privacy Policy, and IP & Takedown Policy —
+ * every other entry point (the sign-up modal, the first-run notice) is
+ * transient by design. Do not remove it without giving those documents
+ * another home.
  */
-import { CanvasMenuButton, GameCanvasScreen, Toggle } from '../components';
+import { CanvasMenuButton, FanProjectDisclaimerLine, GameCanvasScreen, Toggle } from '../components';
 import { useAuthStore } from '../store/authStore';
 import { useNavigationStore } from '../store/navigationStore';
 import { useSettingsStore } from '../store/settingsStore';
@@ -66,6 +72,26 @@ export function SettingsScreen() {
             <CanvasMenuButton label="Credits" size="sm" onClick={() => navigateTo({ screen: 'credits' })} className="w-full max-w-none" />
             <CanvasMenuButton label="Log Out" prominence="danger" size="sm" onClick={logout} className="w-full max-w-none" />
           </div>
+        </section>
+
+        {/*
+          Legal gets its own section rather than a fifth button in the Account
+          grid: these are the documents a player is sent to look for ("where do
+          I ask for my data back?", "who do I email about a card image?"), and
+          a row of three named links is findable in a way one button labelled
+          "Legal" is not.
+        */}
+        <section className="border-2 border-white/12 bg-[linear-gradient(180deg,_rgba(10,28,66,0.7),_rgba(3,9,24,0.85))] p-5 shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)] sm:p-6">
+          <div className="inline-flex items-center gap-2">
+            <span aria-hidden="true" className="h-2 w-2 flex-shrink-0 rounded-full bg-white/50" />
+            <p className="font-display text-lg font-black uppercase tracking-[0.18em] text-white/80 sm:text-xl">Legal</p>
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <CanvasMenuButton label="Terms of Service" size="sm" onClick={() => navigateTo({ screen: 'legal', doc: 'terms' })} className="w-full max-w-none" />
+            <CanvasMenuButton label="Privacy Policy" size="sm" onClick={() => navigateTo({ screen: 'legal', doc: 'privacy' })} className="w-full max-w-none" />
+            <CanvasMenuButton label="IP & Takedowns" size="sm" onClick={() => navigateTo({ screen: 'legal', doc: 'dmca' })} className="w-full max-w-none" />
+          </div>
+          <FanProjectDisclaimerLine className="mt-4" />
         </section>
       </div>
     </GameCanvasScreen>

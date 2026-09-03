@@ -38,7 +38,14 @@ let trainable = 0;
 for (let i = 0; i < games; i++) {
   const la = byNum.get(LEADERS[i % LEADERS.length])!;
   const lb = byNum.get(LEADERS[(i + 1) % LEADERS.length])!;
-  const opts: HarnessOptions = { mode: 'v1', difficulty, seed: `selfplay-${difficulty}-${i}`, maxActions: 2500 };
+  // deadlineMs, not just maxActions: some board states loop without ever
+  // adding actions (OP04-001's "cannot attack" lock is the known one), so an
+  // action cap never fires and the whole run hangs on one game. The arena
+  // already learned this; recording needs the same guard.
+  const opts: HarnessOptions = {
+    mode: 'v1', difficulty, seed: `selfplay-${difficulty}-${i}`, maxActions: 2500,
+    deadlineMs: Number(process.argv.find((a) => a.startsWith('--deadline='))?.split('=')[1] ?? 40000),
+  };
 
   const { trajectory, stuck } = recordMatch(la, buildDeckFor(la, catalog), lb, buildDeckFor(lb, catalog), opts);
 

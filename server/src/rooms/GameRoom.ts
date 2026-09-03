@@ -51,7 +51,9 @@ import {
   type ChatBroadcastPayload,
   type RpsPickPayload,
   type RpsUpdatePayload,
+  type JoinOptions,
 } from '../../../shared/multiplayer';
+import { shouldRecordMatch } from '../../../shared/matchRecordingConsent';
 import {
   applyRpsPick,
   createRpsToss,
@@ -79,6 +81,11 @@ interface SeatBinding {
   userId: string;
   username: string;
   deck: SavedDeck | null;
+  /**
+   * This seat's answer to the "Share match data" setting, from its join
+   * options. See the joint-consent rule in startMatchWith().
+   */
+  contributeMatchData: boolean;
 }
 
 export class GameRoom extends Room<{ state: GameRoomState }> {
@@ -150,7 +157,7 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     return claims;
   }
 
-  onJoin(client: Client): void {
+  onJoin(client: Client, options?: JoinOptions): void {
     const auth = client.auth as JwtClaims;
     const rankedParticipant = this.rankedParticipants.find((participant) => participant.playerId === auth.sub) ?? null;
     const seatId = rankedParticipant?.seatId ?? this.nextFreeSeat();
@@ -164,6 +171,9 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
       userId: auth.sub,
       username: rankedParticipant?.displayName ?? auth.username,
       deck: rankedParticipant?.deckSnapshot ?? null,
+      // Absent means yes: that is the client's shipped default, and it keeps an
+      // older build that does not send the field behaving as it does today.
+      contributeMatchData: options?.contributeMatchData !== false,
     });
 
     const seat = new SeatState();
@@ -318,7 +328,11 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     const p2 = bindings.find((b) => b.seatId === SEAT_P2);
     if (!p1?.deck || !p2?.deck) return;
 
-    const started = GameSession.start(p1.deck, p2.deck, decidingSeatId);
+    // Joint consent — the rule (and why it is joint) lives in
+    // shared/matchRecordingConsent.ts, so the settings copy the player reads
+    // and the behaviour the server enforces cannot drift apart.
+    const recordMatch = shouldRecordMatch([p1, p2]);
+    const started = GameSession.start(p1.deck, p2.deck, decidingSeatId, { record: recordMatch });
     if (!started.ok) {
       this.broadcast(ServerMessage.Rejected, { of: 'ready', reasons: started.reasons } satisfies RejectedPayload);
       this.state.seats.forEach((s: SeatState) => (s.ready = false));

@@ -1,6 +1,6 @@
 # OPTCG Online — Backend Service
 
-Authoritative backend for the One Piece TCG Online simulator:
+Authoritative backend for the OPTCG YoHoHo! simulator:
 
 - **Express** REST API (JWT email/password auth)
 - **Colyseus** realtime server (authenticated 1v1 `GameRoom`)

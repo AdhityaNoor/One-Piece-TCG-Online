@@ -21,11 +21,20 @@
  * toss can open on, including a rematch toss that opens while both players
  * are still sitting on the finished board.
  *
+ * FanProjectNotice is mounted at the root for the same reason as
+ * OnlineRpsToss, but with the opposite gate: it is a one-time "this is an
+ * unofficial fan project" acknowledgement that must be seen once on ANY
+ * screen a first-run player can land on, so it self-gates on localStorage
+ * (see FanProjectNotice.tsx) and renders nothing thereafter. It sits inside
+ * the authenticated branch on purpose — LandingScreen returns early above
+ * and carries the same disclaimer inline, so a signed-out visitor is never
+ * shown the notice twice.
+ *
  * ComingSoonScreen still exists under /src/app/screens for any future
  * NavigationTarget added before its real screen is built, but nothing
  * currently routes to it.
  */
-import { AppShell, BacksoundControl } from './components';
+import { AppShell, BacksoundControl, FanProjectNotice } from './components';
 import { OnlineRpsToss } from './components/match/OnlineRpsToss';
 import {
   CardLibraryScreen,
@@ -39,6 +48,7 @@ import {
   DeckSelectScreen,
   HubScreen,
   LandingScreen,
+  LegalScreen,
   MatchScreen,
   PlayTestScreen,
   ProfileScreen,
@@ -46,7 +56,7 @@ import {
   SettingsScreen,
   SplashScreen,
 } from './screens';
-import { useCurrentScreen } from './store/navigationStore';
+import { useCurrentScreen, useNavigationStore } from './store/navigationStore';
 import { useAppInit } from './hooks/useAppInit';
 import { useAuthStore } from './store/authStore';
 import { TutorialManager } from '../features/tutorial';
@@ -56,6 +66,7 @@ const BARE_SCREENS = new Set(['match', 'online-match', 'play-test', 'tutorial'])
 export function App() {
   const { ready, progress } = useAppInit();
   const current = useCurrentScreen();
+  const navigateTo = useNavigationStore((state) => state.navigateTo);
   const authStatus = useAuthStore((state) => state.status);
   const offlineMode = useAuthStore((state) => state.offlineMode);
 
@@ -110,6 +121,8 @@ export function App() {
         return <MatchScreen />;
       case 'credits':
         return <CreditsScreen />;
+      case 'legal':
+        return <LegalScreen doc={current.doc} />;
       case 'match':
         return <MatchScreen />;
       default:
@@ -123,6 +136,7 @@ export function App() {
     <>
       {bare ? screen : <AppShell>{screen}</AppShell>}
       <OnlineRpsToss />
+      <FanProjectNotice onOpenLegal={() => navigateTo({ screen: 'legal' })} />
       <BacksoundControl />
     </>
   );

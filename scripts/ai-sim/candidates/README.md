@@ -71,3 +71,25 @@ Run each against baseline at hard before concluding anything about either:
 
 DO NOT ship `fast-wide-search.json`. On the evidence it trades away control
 matchups for aggro ones, which is a worse CPU, not a faster one.
+
+## policy-prior-selfplay.json — REJECTED (expected)
+
+An action policy (`scripts/ai-sim/fitPolicy.ts`) fitted to 74 self-play games,
+winners' decisions only, applied at `strength: 8`.
+
+```
+tuned matchups   : 45.6% [38.1%-53.4%] | 73W-87L | not significant
+held-out matchups: 47.5% [39.9%-55.2%] | 76W-84L | not significant
+```
+
+This candidate exists to be rejected, and the number is the point rather than a
+disappointment. The model was fitted to decisions the CPU itself made, so the
+best it can do is reproduce the evaluator it is supposed to improve — held-out
+top-1 was 54.8% against a 22.0% random baseline, which says the pipeline works
+and says nothing whatever about play quality. Adding a noisy copy of the
+existing ranking on top of the existing ranking is, unsurprisingly, not an
+improvement.
+
+Re-fit this against `--source=online` rows (matches between people) before
+drawing any conclusion about whether the policy prior helps. Keep the file: it
+is the control that makes the human-data number interpretable.

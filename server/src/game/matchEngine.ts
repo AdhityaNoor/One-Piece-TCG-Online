@@ -35,6 +35,17 @@ import {
 export const SEAT_P1 = 'p1';
 export const SEAT_P2 = 'p2';
 
+/** Per-match switches from the caller (GameRoom), not from the rules. */
+export interface MatchStartOptions {
+  /**
+   * Record this match as an action stream? Defaults to true.
+   *
+   * GameRoom passes false when either seat declined the "Share match data"
+   * setting — see the joint-consent note there.
+   */
+  record?: boolean;
+}
+
 export type MatchStartResult =
   | { ok: true; session: GameSession }
   | { ok: false; reasons: string[] };
@@ -100,7 +111,12 @@ export class GameSession {
    * from the match seed here, which meant the client's pre-game animation was
    * decoration over a result the server had already decided by itself.
    */
-  static start(p1Deck: SavedDeck, p2Deck: SavedDeck, decidingPlayerId: string): MatchStartResult {
+  static start(
+    p1Deck: SavedDeck,
+    p2Deck: SavedDeck,
+    decidingPlayerId: string,
+    options: MatchStartOptions = {},
+  ): MatchStartResult {
     const p1Input = savedDeckToPlayerSetupInput(p1Deck, SEAT_P1);
     const p2Input = savedDeckToPlayerSetupInput(p2Deck, SEAT_P2);
 
@@ -120,7 +136,13 @@ export class GameSession {
     const images = buildCardImageLookup([p1Deck, p2Deck]);
     const registry = buildCuratedEffectRegistry(defs);
 
+    // No consent, no recording. Checked BEFORE the recorder is built rather
+    // than before it is persisted: a match that was never meant to be recorded
+    // should not be sitting in this process's memory either.
     let recorder: TrajectoryRecorder | null = null;
+    if (options.record === false) {
+      return { ok: true, session: new GameSession(result.state, defs, images, registry, seed, null) };
+    }
     try {
       recorder = createTrajectoryRecorder({
         source: 'online',

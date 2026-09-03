@@ -1,7 +1,7 @@
 {
-  "name": "One Piece TCG Online",
-  "short_name": "OP TCG",
-  "description": "Play the One Piece Card Game in your browser — build decks and battle with a rules-accurate online simulator.",
+  "name": "OPTCG YoHoHo!",
+  "short_name": "YoHoHo!",
+  "description": "An unofficial, fan-made simulator for the One Piece Card Game. Not affiliated with Bandai. Build decks and practise in your browser.",
   "id": "/",
   "start_url": "/",
   "scope": "/",

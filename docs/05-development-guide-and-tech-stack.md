@@ -2,7 +2,7 @@
 
 ## What You Are Building
 
-One Piece TCG Online is a browser-based simulator for the One Piece Card Game. The first target is local single-player hotseat play where one person controls both players. The architecture should still behave as if every click may later become a network request to an authoritative server.
+OPTCG YoHoHo! is a browser-based simulator for the One Piece Card Game. The first target is local single-player hotseat play where one person controls both players. The architecture should still behave as if every click may later become a network request to an authoritative server.
 
 The core product is not the React UI. The core product is a deterministic, serializable, UI-agnostic TypeScript game engine that the UI can project and control through validated actions.
 

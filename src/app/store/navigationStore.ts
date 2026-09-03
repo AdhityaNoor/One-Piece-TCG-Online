@@ -11,6 +11,7 @@
  */
 import { create } from 'zustand';
 import type { CpuDifficulty } from '../../ai';
+import type { LegalDocumentId } from '../legal/legalDocuments';
 
 /**
  * Presentation-only match config layered on top of the pure {deckIdA,
@@ -79,6 +80,13 @@ export type NavigationTarget =
   | { screen: 'casual-lobby'; regulation?: 'casualStandard' | 'casualExtra' | 'rankedStandard' }
   | { screen: 'online-match' }
   | { screen: 'credits' }
+  /**
+   * Terms / Privacy / IP & Takedowns, all three on one screen (see
+   * LegalScreen.tsx). `doc` picks the tab it opens on, so a link that
+   * says "Privacy Policy" lands on the Privacy Policy rather than on the
+   * Terms with a tab strip the player has to notice.
+   */
+  | { screen: 'legal'; doc?: LegalDocumentId }
   | { screen: 'tutorial' }
   | { screen: 'match'; deckIdA: string; deckIdB: string; presentation?: MatchPresentation };
 
@@ -142,6 +150,7 @@ export function resolveHeaderTab(target: NavigationTarget): HubTab | null {
     case 'settings':
     case 'debug-tools':
     case 'credits':
+    case 'legal':
       return 'settings';
     default:
       return null;
