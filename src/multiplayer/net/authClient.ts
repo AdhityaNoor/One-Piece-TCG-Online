@@ -12,6 +12,7 @@ import type {
   SignupRequest,
 } from '../../../shared/auth';
 import { apiBaseUrl } from './backendConfig';
+import { readApiJson } from './apiResponse';
 
 /** Thrown on any non-2xx response, carrying the server's machine code. */
 export class AuthApiError extends Error {
@@ -26,11 +27,17 @@ export class AuthApiError extends Error {
 }
 
 async function parseOrThrow<T>(res: Response): Promise<T> {
-  const text = await res.text();
-  const body = text ? (JSON.parse(text) as unknown) : {};
-  if (!res.ok) {
+  // Status and readability are checked BEFORE the body is trusted. Parsing
+  // first would surface an HTML error page as a raw SyntaxError instead of
+  // the failure it actually is — see net/apiResponse.ts.
+  const { body, nonJsonReason } = await readApiJson(res);
+  if (!res.ok || nonJsonReason) {
     const err = body as Partial<ApiErrorBody>;
-    throw new AuthApiError(err.error ?? `Request failed (${res.status}).`, err.code ?? 'INTERNAL', res.status);
+    throw new AuthApiError(
+      err.error ?? nonJsonReason ?? `Request failed (${res.status}).`,
+      err.code ?? 'INTERNAL',
+      res.status,
+    );
   }
   return body as T;
 }

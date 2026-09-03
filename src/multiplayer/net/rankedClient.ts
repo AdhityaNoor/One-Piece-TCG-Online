@@ -8,6 +8,7 @@ import type {
 } from '../../../shared/ranked';
 import type { SavedDeck } from '../../cards/decks/savedDeck';
 import { apiBaseUrl } from './backendConfig';
+import { readApiJson } from './apiResponse';
 
 export class RankedApiError extends Error {
   constructor(
@@ -28,11 +29,17 @@ export interface RankedConfigResponse {
 }
 
 async function parseOrThrow<T>(res: Response): Promise<T> {
-  const text = await res.text();
-  const body = text ? (JSON.parse(text) as unknown) : {};
-  if (!res.ok) {
+  // Status and readability are checked BEFORE the body is trusted. Parsing
+  // first would surface an HTML error page as a raw SyntaxError instead of
+  // the failure it actually is — see net/apiResponse.ts.
+  const { body, nonJsonReason } = await readApiJson(res);
+  if (!res.ok || nonJsonReason) {
     const err = body as { error?: string; code?: string; details?: unknown };
-    throw new RankedApiError(err.error ?? `Request failed (${res.status}).`, err.code ?? 'INTERNAL', res.status, err.details);
+    throw new RankedApiError(
+      err.error ?? nonJsonReason ?? `Request failed (${res.status}).`,
+      err.code ?? 'INTERNAL',
+      res.status, err.details,
+    );
   }
   return body as T;
 }

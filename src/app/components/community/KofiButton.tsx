@@ -20,7 +20,13 @@ import { KOFI_USERNAME, kofiButtonImageUrl, kofiPageUrl } from '../../config/com
 export interface KofiButtonProps {
   /** Applied to the link. Callers own the sizing. */
   className?: string;
-  /** Height utility for the image, so callers can scale it per surface. */
+  /**
+   * Sizing utilities for the image, so callers can scale it per surface.
+   * Overrides the default entirely (including its `w-auto`), so a caller that
+   * wants the button to fill its container passes both axes — e.g.
+   * `h-auto w-full`. Only `max-w-full` is always applied, to keep the image
+   * from overflowing its container whatever the caller asks for.
+   */
   imageClassName?: string;
 }
 
@@ -45,7 +51,7 @@ export function KofiButton({ className, imageClassName }: KofiButtonProps) {
            ever fails the browser renders this text in place of the image,
            which keeps the link usable instead of leaving a blank strip. */
         alt={`Support ${KOFI_USERNAME} on Ko-fi`}
-        className={['w-auto max-w-full', imageClassName ?? 'h-9'].join(' ')}
+        className={['max-w-full', imageClassName ?? 'h-9 w-auto'].join(' ')}
         draggable={false}
         loading="lazy"
       />

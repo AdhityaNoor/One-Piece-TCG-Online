@@ -37,20 +37,42 @@ async function main(): Promise<void> {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
 
-  // CORS for the Vercel frontend origin(s). Same allow-list is honored by the
+  // CORS for the frontend origin(s). Same allow-list is honored by the
   // WebSocket transport via `verifyClient` below.
+  //
+  // A disallowed origin gets `false` rather than an Error. Passing an Error
+  // to this callback hands it to Express's default error handler, which
+  // renders an HTML 500 — so a simple misconfiguration (a new domain not yet
+  // added to CLIENT_ORIGIN) reached the browser as
+  // `Unexpected token '<', "<!DOCTYPE "... is not valid JSON` and read like a
+  // server crash. `false` just omits the CORS headers, which is what a
+  // rejection is supposed to be.
   app.use(
     cors({
-      origin: (origin, callback) => {
-        if (isAllowedClientOrigin(origin)) {
-          callback(null, true);
-          return;
-        }
-        callback(new Error(`Origin not allowed by CORS: ${origin ?? '<none>'}`));
-      },
+      origin: (origin, callback) => callback(null, isAllowedClientOrigin(origin)),
       credentials: true,
     }),
   );
+
+  // ...and then say so explicitly, in JSON, with the allow-list in the log.
+  // The browser will still hide this body from the page (no CORS headers on a
+  // rejection, by definition), but the STATUS is now honest, curl gets a
+  // readable answer, and the server log names both the origin that was
+  // refused and the ones that would have worked — which is the whole
+  // diagnosis, printed at the moment of failure.
+  app.use((req, res, next) => {
+    if (isAllowedClientOrigin(req.headers.origin)) {
+      next();
+      return;
+    }
+    console.warn(
+      `[server] refused origin ${req.headers.origin ?? '<none>'} — CLIENT_ORIGIN allows: ${env.clientOrigins.join(', ')}`,
+    );
+    res.status(403).json({
+      error: `Origin not allowed: ${req.headers.origin ?? '<none>'}`,
+      code: 'ORIGIN_NOT_ALLOWED',
+    });
+  });
 
   // Cloud Run health check — must be fast and dependency-light.
   app.get('/health', (_req, res) => {
