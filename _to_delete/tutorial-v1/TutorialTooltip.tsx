@@ -6,12 +6,12 @@
  */
 import { useEffect, useState, type CSSProperties } from 'react';
 import { resolveAnchorRect } from './tutorialAnchors';
-import type { TutorialAnchorId, TutorialDialogueLine } from './types';
+import type { TutorialAnchorId } from './types';
 
 export interface TutorialTooltipProps {
   anchorId: TutorialAnchorId;
-  lines: TutorialDialogueLine[];
-  /** Index into `lines` currently shown — TutorialManager advances this on tap before the chapter's own objective becomes live. */
+  lines: readonly string[];
+  /** Index into `lines` currently shown — TutorialManager advances this on tap before the beat's own objective becomes live. */
   lineIndex: number;
   onAdvanceLine: () => void;
   objective: string;
@@ -42,7 +42,7 @@ function useTooltipPosition(anchorId: TutorialAnchorId): CSSProperties {
 
 export function TutorialTooltip({ anchorId, lines, lineIndex, onAdvanceLine, objective, showObjective, showSuccess, successLine }: TutorialTooltipProps) {
   const position = useTooltipPosition(anchorId);
-  const line = lines[Math.min(lineIndex, lines.length - 1)];
+  const line = lines[Math.min(lineIndex, lines.length - 1)] ?? '';
   const hasMoreDialogue = lineIndex < lines.length - 1;
 
   return (
@@ -56,7 +56,7 @@ export function TutorialTooltip({ anchorId, lines, lineIndex, onAdvanceLine, obj
         <p className="mt-2 text-sm font-semibold leading-6 text-emerald-300">{successLine}</p>
       ) : (
         <>
-          <p className="mt-2 text-sm leading-6 text-white/90">{line.text}</p>
+          <p className="mt-2 text-sm leading-6 text-white/90">{line}</p>
           {showObjective && (
             <div className="mt-3 rounded-lg border border-white/15 bg-white/5 p-2.5">
               <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/40">Current Objective</p>

@@ -14,6 +14,11 @@ export default {
     // production build, which is why the CMS rendered unstyled after
     // `vite build` despite looking fine in local dev with a warm JIT cache.
     './src/admin/**/*.{ts,tsx}',
+    // Feature modules (tutorial, etc.) live outside src/app for the same
+    // reason admin does, and were missing here for the same reason — the
+    // tutorial's whole overlay UI rendered unstyled because none of its
+    // utilities were ever generated.
+    './src/features/**/*.{ts,tsx}',
   ],
   theme: {
     extend: {

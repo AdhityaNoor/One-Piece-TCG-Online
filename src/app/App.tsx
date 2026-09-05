@@ -59,7 +59,7 @@ import {
 import { useCurrentScreen, useNavigationStore } from './store/navigationStore';
 import { useAppInit } from './hooks/useAppInit';
 import { useAuthStore } from './store/authStore';
-import { TutorialManager } from '../features/tutorial';
+import { TutorialRoot } from '../features/tutorial';
 
 const BARE_SCREENS = new Set(['match', 'online-match', 'play-test', 'tutorial']);
 
@@ -98,7 +98,7 @@ export function App() {
       case 'play-test':
         return <PlayTestScreen />;
       case 'tutorial':
-        return <TutorialManager />;
+        return <TutorialRoot />;
       case 'card-library':
         return <CardLibraryScreen />;
       case 'deck-builder':

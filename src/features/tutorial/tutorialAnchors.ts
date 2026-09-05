@@ -18,6 +18,9 @@ const ZONE_SELECTOR: Record<Exclude<TutorialAnchorId, 'none'>, string> = {
   handZone: '[data-board-zone="hand"][data-board-player="p1"]',
   lifeZone: '[data-board-zone="life"][data-board-player="p1"]',
   characterAreaZone: '[data-board-zone="characterArea"][data-board-player="p1"]',
+  // PlayerBoardPanel already tagged this cell as the Stage drop target for
+  // hand drags, so this reuses an attribute that was already there.
+  stageZone: '[data-board-zone="stageArea"][data-board-player="p1"]',
   trashZone: '[data-board-zone="trash"][data-board-player="p1"]',
   deckZone: '[data-board-zone="deck"][data-board-player="p1"]',
 };
