@@ -54,6 +54,7 @@ import {
 } from '../components/match';
 import { SETTINGS_PANEL_SHELL, SETTINGS_PANEL_TITLE } from '../components/settingsPanelStyles';
 import { useCpuTurnController } from '../hooks/useCpuTurnController';
+import { useMatchMusic } from '../hooks/useMatchMusic';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
 import { createActionId, PLAYER_A_ID, PLAYER_B_ID, useMatchStore } from '../store/matchStore';
@@ -68,7 +69,6 @@ import { EFFECT_RUNTIME_LABEL, EFFECT_RUNTIME_MODE } from '../config/effectRunti
 import type { AssetCacheManager } from '../../cards/assets/assetCache';
 import { createCacheStorageAssetManager } from '../../cards/assets/cacheStorageAssetManager';
 import { preloadMatchAssets } from '../lib/matchAssetPreload';
-import { useHexDriftDelay } from '../hooks/useHexDriftDelay';
 
 function EffectRuntimeBadge() {
   const summary = useMatchStore((s) => s.v2EffectRuntime?.summary);
@@ -334,6 +334,18 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   // we're actually on the match screen with a live GameState.
   const selection = useBoardSelection(matchState ? getActingPlayerId(matchState) : null);
   const { thinking: cpuThinking } = useCpuTurnController(isCpuMatch && !!matchState && !matchState.gameOver);
+
+  // Music follows the match, not the screen stack: the battle bed starts when
+  // a board exists and hands back to the menu bed on the way out. In a hotseat
+  // game there is no local seat to win, so the result music stays out of it and
+  // the bed simply stops.
+  const matchOutcome: 'win' | 'lose' | null =
+    matchState?.gameOver && localPlayerId
+      ? matchState.gameOver.winnerId === localPlayerId
+        ? 'win'
+        : 'lose'
+      : null;
+  useMatchMusic({ active: isMatchScreen && !!matchState, outcome: matchOutcome });
 
   useEffect(() => {
     if (selection.mode.kind !== 'selectAttackTarget') setHoveredAttackTargetId(null);
@@ -2931,16 +2943,50 @@ function VictoryCanvas({ winnerId }: { winnerId: string }) {
   return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-hidden="true" />;
 }
 
+/**
+ * The battle screen's backdrop, and the one place in the app that does NOT use
+ * the drifting honeycomb.
+ *
+ * Every other screen is decoration around content; this one is a play surface,
+ * and the mats on top of it are already washed in their Leaders' colours, lit
+ * with a gold turn-glow and ringed in blue/red while a prompt is open. A
+ * moving, navy, patterned field competed with all of that. Neutral grey lets
+ * the coloured signals be the only colour on screen, and holding still means
+ * nothing on the backdrop can be mistaken for something moving on the board.
+ *
+ * `.op-bg-tint` multiplies a greyscaled, defocused map over this base, so the
+ * base's VALUE is what the artwork darkens from — a mid grey keeps the map's
+ * line work readable while staying dark enough for the mats to sit clearly on
+ * top. Multiply can only darken, so this is also the ceiling on the whole
+ * screen's brightness (see the .op-bg-tint comment in index.css).
+ *
+ * --op-bg-blur overrides that class's default 5px. This screen goes further
+ * than the rest of the app precisely because it is the one you are meant to
+ * read a board off, not a backdrop you are meant to notice.
+ */
+const MATCH_BACKDROP_STYLE = {
+  backgroundColor: '#55595f',
+  // Computed key, matching how --op-mobile-hand-band is set below: a bare
+  // custom property in an object literal trips excess-property checking
+  // before the cast can apply.
+  ['--op-bg-blur']: '10px',
+} as CSSProperties;
+
 function MatchGameShell({ title, headerRight, children }: { title: string; headerRight?: ReactNode; children: ReactNode }) {
-  const hexDriftDelay = useHexDriftDelay();
   void headerRight;
   return (
-    <main className="relative h-dvh w-full overflow-hidden bg-[#13329a] font-body text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-70" />
-      {/* Animated honeycomb as its own layer rather than `op-hex-bg` on <main>:
-          as an element background it painted UNDERNEATH the photo wash above,
-          which muddied it. Sits above the photo, below the z-10 board. */}
-      <div aria-hidden="true" style={hexDriftDelay} className="op-hex-bg pointer-events-none absolute inset-0" />
+    <main
+      className="relative h-dvh w-full overflow-hidden font-body text-white"
+      style={MATCH_BACKDROP_STYLE}
+    >
+      {/* Overscanned past the viewport (-inset-16 = 64px, comfortably more than
+          the blur radius). A blurred layer samples transparency from outside
+          its own box, so an inset-0 copy fades along all four screen edges.
+          Measured at 1920 it is a ~3/255 lift right at the border — slight,
+          because the artwork is already pale there, but it is a hairline of
+          "not quite the same grey" framing the screen, and the fix costs
+          nothing. */}
+      <div className="pointer-events-none absolute -inset-16 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-70" />
       {/* Layer 5 (animation/visual polish) — decorative starfield warp, below
           the actual board content (z-10 section). Reads/writes nothing in
           GameState. */}

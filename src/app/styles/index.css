@@ -70,14 +70,17 @@
   body::before {
     content: "";
     position: fixed;
-    inset: 0;
     z-index: -1;
     background-image: url("/ui/bg.png");
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
-    /* Same treatment as .op-bg-tint — see the comment there. */
-    filter: grayscale(1);
+    /* Same treatment as .op-bg-tint — see the comment there, including why the
+       blur is a variable. This one CAN afford the overscan that class cannot:
+       it is position: fixed at z-index -1, so nothing clips or scrolls it and
+       growing it past the viewport only pushes the blur's fade off-screen. */
+    inset: -4rem;
+    filter: grayscale(1) blur(var(--op-bg-blur, 5px));
     mix-blend-mode: multiply;
     pointer-events: none;
   }
@@ -186,7 +189,23 @@
    Note this means `opacity` now controls how DEEP the lines cut, not how
    bright the image is. */
 .op-bg-tint {
-  filter: grayscale(1);
+  /* Defocused so the map reads as depth behind the UI rather than as something
+     to look at. The amount is a variable, not a constant, because the battle
+     screen wants a stronger one — it is the only screen whose content is a play
+     surface, so its backdrop has to recede further. Any ancestor can set
+     --op-bg-blur to retune it; MatchScreen does exactly that.
+
+     Note blur() is in SCREEN pixels while the artwork is `cover`-scaled, so the
+     same value bites harder on a small window than a large one. 5px is judged
+     at 1920.
+
+     No overscan here, unlike the battle screen's layer: a blurred box samples
+     transparency from outside itself and so fades slightly at its own edges,
+     but several users of this class (CardDetailModal) sit inside scrolling or
+     rounded containers where growing the box would bleed or add scroll area.
+     At this radius the fade measures ~1/255 — below the noise floor of the
+     artwork itself. */
+  filter: grayscale(1) blur(var(--op-bg-blur, 5px));
   mix-blend-mode: multiply;
 }
 

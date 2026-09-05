@@ -172,9 +172,37 @@ describe('soundManager — voices', () => {
   it('detunes repeats so the same sample does not sound mechanical', async () => {
     const { manager, h } = await ready();
     for (let i = 0; i < 3; i += 1) manager.play('card.draw', { delayMs: i * 200 });
+    const def = SOUND_CUES['card.draw'];
     const detunes = h.started.map((s) => s.detune);
     expect(new Set(detunes).size).toBeGreaterThan(1);
-    for (const d of detunes) expect(Math.abs(d)).toBeLessThanOrEqual(SOUND_CUES['card.draw'].detuneCents);
+    // The jitter is measured around the cue's fixed bias, not around zero.
+    for (const d of detunes) expect(Math.abs(d - def.detuneBiasCents)).toBeLessThanOrEqual(def.detuneCents);
+  });
+
+  it('centres a cue on its pitch bias, which is what lets cues share a recording', async () => {
+    // battle.ko and battle.blocker are the same impact file; the bias is the
+    // only thing that makes one read as heavy and the other as light. If this
+    // stops being applied, half the SFX set collapses into one sound.
+    const { manager, h } = await ready();
+    const ko = SOUND_CUES['battle.ko'];
+    const blocker = SOUND_CUES['battle.blocker'];
+    expect(ko.src).toBe(blocker.src);
+
+    manager.play('battle.ko');
+    manager.play('battle.blocker');
+    const [koVoice, blockerVoice] = h.started;
+    expect(Math.abs(koVoice.detune - ko.detuneBiasCents)).toBeLessThanOrEqual(ko.detuneCents);
+    expect(Math.abs(blockerVoice.detune - blocker.detuneBiasCents)).toBeLessThanOrEqual(blocker.detuneCents);
+    // Their jitter windows must not overlap, or the two gestures blur together.
+    expect(koVoice.detune).toBeLessThan(blockerVoice.detune);
+  });
+
+  it('plays a zero-bias, zero-spread cue at its recorded pitch', async () => {
+    const { manager, h } = await ready();
+    expect(SOUND_CUES['stinger.game.win'].detuneCents).toBe(0);
+    expect(SOUND_CUES['stinger.game.win'].detuneBiasCents).toBe(0);
+    manager.play('stinger.game.win');
+    expect(h.started[0].detune).toBe(0);
   });
 
   it('caps how many copies of one cue can sound at once', async () => {
@@ -249,5 +277,68 @@ describe('soundManager — mixing', () => {
       { cueId: 'card.draw', delayMs: 640 },
     ]);
     expect(h.started).toHaveLength(2);
+  });
+});
+
+describe('soundManager — music', () => {
+  /** Let every queued microtask and the stub fetch settle. */
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it('never stacks two copies of the same bed, even called twice mid-download', async () => {
+    // The bug this guards: a bed is several MB and loads asynchronously, so
+    // the first request is still downloading when the second arrives. Both
+    // resolve, both start, and the player hears the track twice a few hundred
+    // milliseconds out of phase. React StrictMode fires every effect twice, so
+    // this was the DEFAULT behaviour on entering a match in dev, and any
+    // settings change that re-ran the effect reproduced it in prod.
+    const { manager, h } = await ready();
+    manager.playMusic('music.battle');
+    manager.playMusic('music.battle');
+    await settle();
+    expect(h.started).toHaveLength(1);
+
+    // And again once it is genuinely playing.
+    manager.playMusic('music.battle');
+    await settle();
+    expect(h.started).toHaveLength(1);
+  });
+
+  it('drops a bed whose download lands after it was stopped', async () => {
+    const { manager, h } = await ready();
+    manager.playMusic('music.battle');
+    manager.stopMusic(0);
+    await settle();
+    expect(h.started).toHaveLength(0);
+  });
+
+  it('lets a later request win over one still in flight', async () => {
+    const { manager, h } = await ready();
+    manager.playMusic('music.battle');
+    manager.playMusic('music.victory');
+    await settle();
+    expect(h.started).toHaveLength(1);
+    // The one that sounds is the one asked for last.
+    expect(h.started[0].gain).toBeCloseTo(SOUND_CUES['music.victory'].gain, 5);
+  });
+
+  it('still starts the bed while music is muted, so unmuting joins it in progress', async () => {
+    // Otherwise turning music on mid-match either does nothing until the next
+    // screen change, or restarts the track from the top.
+    const { manager, h } = await ready({ musicEnabled: false });
+    manager.playMusic('music.battle');
+    await settle();
+    expect(h.started).toHaveLength(1);
+    expect(h.musicGain()).toBe(0);
+  });
+
+  it('stops the previous bed when swapping to another', async () => {
+    const { manager, h } = await ready();
+    manager.playMusic('music.battle');
+    await settle();
+    const stoppedBefore = h.stopped;
+    manager.playMusic('music.victory', 0);
+    await settle();
+    expect(h.started).toHaveLength(2);
+    expect(h.stopped).toBeGreaterThan(stoppedBefore);
   });
 });

@@ -41,13 +41,13 @@ export function CommunityColumn() {
           Discord scrolls its own member list past the visible rows, which is
           its native behaviour rather than a squeeze. */}
       <DiscordServerWidget className="h-[26rem] w-full lg:h-auto lg:min-h-0 lg:flex-1" />
-      {/* Full rail width, so it lines up with the widget's edges above it.
-          `h-auto` alongside `w-full` keeps Ko-fi's own aspect ratio — setting
-          both axes would squash their wordmark. This does upscale the asset
-          slightly at 24rem; if it ever looks soft, the lever is
-          VITE_KOFI_BUTTON_VARIANT rather than a CSS change, since Ko-fi
-          publishes each variant at one size. */}
-      <KofiButton className="w-full" imageClassName="h-auto w-full" />
+      {/* Left at Ko-fi's own size, centred in the rail rather than stretched
+          to its width. Ko-fi publishes the asset at one size and it is drawn
+          as a button, not a banner: scaled to a 24rem rail it both upscales
+          past its native resolution and stops reading as something you press.
+          The `w-full` here is on the LINK, so the button centres — it is not
+          a width for the image. */}
+      <KofiButton className="w-full" />
     </aside>
   );
 }

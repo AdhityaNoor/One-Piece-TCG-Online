@@ -4,8 +4,8 @@
  * cue registry, mixer, throttling and user settings as the real match — there
  * is no second audio path any more.
  *
- * The underlying assets in public/audio/sfx/ are placeholders; replacing one
- * changes both the tutorial and the live game at once.
+ * The underlying assets live in public/audio/sfx/; replacing one changes both
+ * the tutorial and the live game at once.
  */
 import { playCue } from '../../audio';
 import type { SoundCueId } from '../../audio';

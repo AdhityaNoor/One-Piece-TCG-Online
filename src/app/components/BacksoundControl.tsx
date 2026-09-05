@@ -2,10 +2,10 @@
  * Global background music player. It mounts once at the app root so playback
  * can continue across screens while remaining purely UI/presentation state.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { useSettingsStore } from '../store/settingsStore';
-import { playCue, resolveClickCue } from '../../audio';
+import { isMenuBedSuspended, playCue, resolveClickCue, subscribeMenuBed } from '../../audio';
 import {
   SETTINGS_PANEL_ICON_BUTTON,
   SETTINGS_PANEL_LABEL,
@@ -14,7 +14,9 @@ import {
   SETTINGS_PANEL_TITLE,
 } from './settingsPanelStyles';
 
-const BACKSOUND_SRC = '/audio/main-menu-backsound.mp3';
+// Kept in sync with the 'music.menu' cue in audio/cues.ts — this element is
+// the menu bed's actual player; the cue entry exists so the mixer knows about it.
+const BACKSOUND_SRC = '/audio/sfx/src/main2.ogg';
 
 function SpeakerIcon({ muted }: { muted: boolean }) {
   return (
@@ -240,11 +242,17 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
     }
   }
 
+  // The match screen takes the music over while a board is up (see
+  // useMatchMusic). The user's backsound setting is left alone through that —
+  // this is a handover, not a mute, so the bed comes back exactly as they left
+  // it when they return to the menus.
+  const menuBedSuspended = useSyncExternalStore(subscribeMenuBed, isMenuBedSuspended, () => false);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    if (!backsoundEnabled) {
+    if (!backsoundEnabled || menuBedSuspended) {
       audio.pause();
       setIsPlaying(false);
       setPlaybackBlocked(false);
@@ -261,10 +269,10 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
         setIsPlaying(false);
         setPlaybackBlocked(true);
       });
-  }, [backsoundEnabled]);
+  }, [backsoundEnabled, menuBedSuspended]);
 
   useEffect(() => {
-    if (!backsoundEnabled || isPlaying) return;
+    if (!backsoundEnabled || isPlaying || menuBedSuspended) return;
 
     const unlockAudio = () => {
       const audio = audioRef.current;
@@ -287,11 +295,23 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
       window.removeEventListener('pointerdown', unlockAudio);
       window.removeEventListener('keydown', unlockAudio);
     };
-  }, [backsoundEnabled, backsoundVolume, isPlaying]);
+  }, [backsoundEnabled, backsoundVolume, isPlaying, menuBedSuspended]);
 
   const togglePlayback = () => {
     const audio = audioRef.current;
     if (!audio) return;
+
+    // While the match screen owns the music, this button is only a setting:
+    // starting the element here would put the menu bed on top of the battle
+    // bed (two tracks at once, which is exactly what it sounded like). The
+    // effects above bring the element back when the match hands the music
+    // back, honouring whatever the setting says by then.
+    if (menuBedSuspended) {
+      setBacksoundEnabled(!backsoundEnabled);
+      audio.pause();
+      setIsPlaying(false);
+      return;
+    }
 
     if (isPlaying) {
       audio.pause();

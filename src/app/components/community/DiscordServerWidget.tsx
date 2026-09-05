@@ -39,6 +39,15 @@ export function DiscordServerWidget({ className }: DiscordServerWidgetProps) {
          refuses to pass the deprecated attribute through and the widget paints
          its own dark panel anyway. */
       sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
+      /* The white edges this kills are the USER AGENT's, not Discord's. An
+         iframe is painted on its own canvas, and the browser picks that
+         canvas's colour from the EMBEDDED document's `color-scheme` — Discord's
+         widget declares a light one, so the strip around its rounded panel,
+         and the whole frame before its CSS arrives, are painted white. Forcing
+         `color-scheme: dark` on the frame moves that default to dark, and the
+         transparent background lets the hub's own art show through the rounded
+         corners instead of any flat fill. */
+      style={{ colorScheme: 'dark', backgroundColor: 'transparent' }}
       className={['block border-0', className ?? ''].join(' ')}
       loading="lazy"
     />

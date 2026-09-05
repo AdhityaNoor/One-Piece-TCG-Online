@@ -46,7 +46,7 @@ export function CommunityCallout({ className, heading = 'Enjoying the sim?' }: C
       </div>
       <div className="flex flex-wrap items-center justify-center gap-2.5">
         <DiscordJoinButton />
-        <KofiButton imageClassName="h-9" />
+        <KofiButton />
       </div>
     </aside>
   );

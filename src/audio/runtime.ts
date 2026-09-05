@@ -52,6 +52,36 @@ export const soundManager: SoundManager = createSoundManager({
   },
 });
 
+/* ------------------------------------------------------- menu bed handover */
+/**
+ * The menu bed is not a cue — it is a plain <audio> element owned by
+ * BacksoundControl, because it has to survive every screen change. The match
+ * bed IS a cue, played through the mixer so it ducks under a K.O. and follows
+ * the same music slider. Two beds, one pair of ears: whoever starts the match
+ * bed suspends the menu one, and releases it on the way out.
+ *
+ * This lives here rather than in a store so /src/audio keeps knowing nothing
+ * about /src/app — the component subscribes, the match hook publishes.
+ */
+let menuBedSuspended = false;
+const menuBedListeners = new Set<() => void>();
+
+export function isMenuBedSuspended(): boolean {
+  return menuBedSuspended;
+}
+
+/** Called by whatever takes over the music (currently the match screen). */
+export function setMenuBedSuspended(suspended: boolean): void {
+  if (menuBedSuspended === suspended) return;
+  menuBedSuspended = suspended;
+  for (const listener of menuBedListeners) listener();
+}
+
+export function subscribeMenuBed(listener: () => void): () => void {
+  menuBedListeners.add(listener);
+  return () => menuBedListeners.delete(listener);
+}
+
 let unlockInstalled = false;
 
 /**

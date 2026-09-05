@@ -7,12 +7,12 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { SOUND_CUES, SOUND_CUE_IDS, cuesInGroup, isSoundCueId } from '../cues';
+import { SOUND_CUES, SOUND_CUE_IDS, cuesInGroup, isSoundCueId, type SoundCueId } from '../cues';
 
 const PUBLIC_DIR = join(process.cwd(), 'public');
 
 interface Manifest {
-  cues: { id: string; file: string; durationMs: number; brief: string }[];
+  cues: { id: string; file: string; durationMs: number; placeholder: boolean; brief: string }[];
 }
 
 const manifest = JSON.parse(
@@ -34,6 +34,51 @@ describe('sound cue registry', () => {
   it('gives every generated cue a replacement brief', () => {
     const briefless = manifest.cues.filter((cue) => !cue.brief || cue.brief.length < 10);
     expect(briefless).toEqual([]);
+  });
+
+  it('agrees with the manifest about which cues are still placeholders', () => {
+    // The manifest is what a sound designer reads to find the remaining work,
+    // so a cue repointed at a real recording without regenerating it sends
+    // them after a file that is already done. `npm run audio:manifest` fixes.
+    const flagged = new Map(manifest.cues.map((c) => [c.id, c.placeholder]));
+    const wrong = SOUND_CUE_IDS.filter(
+      (id) => flagged.get(id) !== !SOUND_CUES[id].src.startsWith('/audio/sfx/src/'),
+    );
+    expect(wrong).toEqual([]);
+  });
+
+  it('keeps every shared recording readable as separate gestures', () => {
+    // Cues cut from the same file separate themselves by pitch. Two cues on
+    // one file at the same bias and comparable gain are the same sound twice.
+    const byFile = new Map<string, SoundCueId[]>();
+    for (const id of SOUND_CUE_IDS) {
+      const list = byFile.get(SOUND_CUES[id].src) ?? [];
+      list.push(id);
+      byFile.set(SOUND_CUES[id].src, list);
+    }
+    const collisions: string[] = [];
+    for (const [file, ids] of byFile) {
+      if (ids.length < 2) continue;
+      const seen = new Map<number, SoundCueId>();
+      for (const id of ids) {
+        const def = SOUND_CUES[id];
+        if (def.bus === 'music') continue; // beds are never pitched, by design
+        const twin = seen.get(def.detuneBiasCents);
+        if (twin && Math.abs(SOUND_CUES[twin].gain - def.gain) < 0.05) {
+          collisions.push(`${file}: ${twin} and ${id}`);
+        }
+        seen.set(def.detuneBiasCents, id);
+      }
+    }
+    expect(collisions).toEqual([]);
+  });
+
+  it('keeps pitch bias inside an octave either way', () => {
+    // Past ±1200 cents a sample stops sounding like itself and starts
+    // sounding like a bug.
+    for (const id of SOUND_CUE_IDS) {
+      expect(Math.abs(SOUND_CUES[id].detuneBiasCents), `${id} bias`).toBeLessThanOrEqual(1200);
+    }
   });
 
   it('keeps every cue within sane mix bounds', () => {

@@ -3,7 +3,7 @@
   "private": true,
   "version": "beta-1.9.7",
   "type": "module",
-  "description": "OPTCG YoHoHo! — One Piece TCG web simulator. Pure rules engine + card/deck layer under /src/engine and /src/cards; React+Vite+Tailwind app shell under /src/app, /src/board, /src/animations, /src/renderer3d.",
+  "description": "OPTCG YoHoHo! \u2014 One Piece TCG web simulator. Pure rules engine + card/deck layer under /src/engine and /src/cards; React+Vite+Tailwind app shell under /src/app, /src/board, /src/animations, /src/renderer3d.",
   "scripts": {
     "dev": "vite",
     "dev:v2": "vite --mode v2",
@@ -16,6 +16,7 @@
     "scrape:limitless": "tsx scripts/scrape-limitless/run.ts",
     "scrape:limitless:window": "node scripts/scrape/launch.mjs scrape:limitless",
     "build:assets": "node scripts/build-card-assets.mjs && node scripts/generate-format-registry.mjs",
+    "audio:manifest": "tsx scripts/audio/manifest.ts",
     "format:registry": "node scripts/generate-format-registry.mjs",
     "worklist": "tsx scripts/effect-worklist/run.ts",
     "coverage": "tsx scripts/effect-coverage/run.ts",

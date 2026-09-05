@@ -13,9 +13,14 @@
  *  - VOICE CAPS       per cue and globally, so a chain of effects can never
  *                     stack 40 simultaneous sources and clip the master.
  *  - PRIORITY         when the global cap is hit, a K.O. outranks a hover tick.
- *  - DETUNE           repeats of the same asset are pitched ±cents so a
- *                     placeholder (or a real one-shot) doesn't sound robotic.
+ *  - DETUNE           each cue has a fixed pitch bias plus a random ±spread.
+ *                     The bias lets many cues share one recording and still
+ *                     read as distinct; the spread stops repeats sounding
+ *                     stamped out.
  *  - DUCKING          stingers pull the music bed down and let it back up.
+ *  - ONE BED          music requests are idempotent while a track is still
+ *                     downloading, so repeated calls can never stack two
+ *                     copies of the same bed.
  *  - NEVER THROWS     a missing asset, a blocked autoplay, or a browser with
  *                     no WebAudio degrades to silence. Audio is never
  *                     load-bearing for gameplay.
@@ -149,6 +154,15 @@ export function createSoundManager(deps: SoundManagerDeps): SoundManager {
 
   let musicVoice: ActiveVoice | null = null;
   let musicCueId: SoundCueId | null = null;
+  /**
+   * Bumped on every music request. A bed is fetched asynchronously, so by the
+   * time a buffer arrives the request that asked for it may have been
+   * superseded or stopped; a load that resolves against a stale token is
+   * dropped instead of started.
+   */
+  let musicRequestSeq = 0;
+  /** The bed asked for but not yet sounding. Guards against starting it twice. */
+  let pendingMusicCueId: SoundCueId | null = null;
 
   /* --------------------------------------------------------- graph setup */
   function ensureGraph(): AudioContextLike | null {
@@ -319,8 +333,13 @@ export function createSoundManager(deps: SoundManagerDeps): SoundManager {
       const source = active.createBufferSource();
       source.buffer = buffer;
       source.loop = def.loop;
+      // Bias first, jitter around it: the bias is what makes a K.O. and a
+      // [Blocker] read as different gestures when they share one recording,
+      // and the jitter keeps repeats of either from sounding stamped out.
       const spread = options.detuneCents ?? def.detuneCents;
-      if (spread > 0) source.detune.value = (Math.random() * 2 - 1) * spread;
+      const jitter = spread > 0 ? (Math.random() * 2 - 1) * spread : 0;
+      const detune = def.detuneBiasCents + jitter;
+      if (detune !== 0) source.detune.value = detune;
 
       const gainNode = active.createGain();
       gainNode.gain.value = clamp01(def.gain * clamp01(options.gain ?? 1));
@@ -392,20 +411,65 @@ export function createSoundManager(deps: SoundManagerDeps): SoundManager {
     }
   }
 
+  /**
+   * Swap the bed. Safe to call repeatedly with the same cue — and that matters
+   * more than it sounds: a React effect fires twice under StrictMode, and a
+   * settings change re-runs the effects that own the music. A bed is several
+   * megabytes, so the first call is almost always still downloading when the
+   * second arrives, which is why "is it already playing?" is not a sufficient
+   * guard on its own. Without the pending check, two loads of the same track
+   * resolve a few hundred milliseconds apart and the player hears the music
+   * twice, very slightly out of phase.
+   */
   function playMusic(cueId: SoundCueId, fadeMs = DEFAULT_MUSIC_FADE_MS): void {
+    if (pendingMusicCueId === cueId) return;
     if (musicCueId === cueId && musicVoice && !musicVoice.stopped) return;
+
     stopMusic(fadeMs);
-    // Music ignores the SFX throttle map entirely — it is a bed, not a cue.
-    lastPlayedAt.delete(cueId);
-    play(cueId);
-    const voice = musicVoice;
-    if (voice && ctx) {
-      voice.gainNode.gain.value = 0;
-      rampTo(voice.gainNode.gain, clamp01(SOUND_CUES[cueId].gain), fadeMs / 1000);
+    const request = ++musicRequestSeq;
+    // Claim the slot before the await, so a second call in the same tick sees
+    // this one and returns instead of queueing a duplicate.
+    pendingMusicCueId = cueId;
+    musicCueId = cueId;
+
+    const def = SOUND_CUES[cueId];
+    if (!def || !ensureGraph()) {
+      pendingMusicCueId = null;
+      return;
     }
+
+    // A bed is started even while the music setting is off: the music bus is
+    // simply at zero gain, so turning music back on mid-match brings it in
+    // where it should be rather than starting the track over from silence.
+    const begin = (buffer: AudioBufferLike): void => {
+      if (request !== musicRequestSeq) return; // stopped or superseded while loading
+      pendingMusicCueId = null;
+      if (startVoice(cueId, buffer, {}, deps.now()) !== 'played') return;
+      const voice = musicVoice;
+      if (!voice || !ctx) return;
+      voice.gainNode.gain.value = 0;
+      rampTo(voice.gainNode.gain, clamp01(def.gain), fadeMs / 1000);
+    };
+
+    const cached = buffers.get(def.src);
+    if (cached) {
+      begin(cached);
+      return;
+    }
+    void loadBuffer(def.src).then((buffer) => {
+      if (!buffer) {
+        if (request === musicRequestSeq) pendingMusicCueId = null;
+        return;
+      }
+      begin(buffer);
+    });
   }
 
   function stopMusic(fadeMs = DEFAULT_MUSIC_FADE_MS): void {
+    // Invalidate anything in flight first: a bed whose download lands after a
+    // stop must not sneak in behind it.
+    musicRequestSeq += 1;
+    pendingMusicCueId = null;
     const voice = musicVoice;
     musicVoice = null;
     musicCueId = null;
@@ -431,6 +495,8 @@ export function createSoundManager(deps: SoundManagerDeps): SoundManager {
 
   function stopAll(): void {
     for (const voice of [...voices]) releaseVoice(voice);
+    musicRequestSeq += 1;
+    pendingMusicCueId = null;
     musicVoice = null;
     musicCueId = null;
     ducks = [];
