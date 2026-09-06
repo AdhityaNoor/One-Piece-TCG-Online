@@ -33,7 +33,7 @@ import { useCardAnimationStore } from '../../store/cardAnimationStore';
 import { useCardFlightHidden } from '../../hooks/useCardFlightHidden';
 import { CardImage } from '../CardImage';
 import { CardBackArt } from './CardBackArt';
-import { BoardCardTile } from './BoardCardTile';
+import { BoardCardTile, CardActionButton } from './BoardCardTile';
 
 // ── Geometry ───────────────────────────────────────────────────────────────
 /** Pointer travel before a press on a hand card becomes a drag rather than a tap. */
@@ -48,6 +48,22 @@ const OVERLAP = 0.30;
 const PEEK = 0.50;
 const MAX_VISIBLE = 10;
 const ARROW_W = 44;
+
+/**
+ * Stand-in glyph for the Play action: a card dropping onto the field. The
+ * other card actions load PNGs out of public/ui-icons; there is no play.png
+ * yet, so this inline SVG fills CardActionButton's 16px icon slot at the same
+ * weight until one exists.
+ */
+function PlayActionIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+      <path d="M12 3v9" strokeLinecap="round" />
+      <path d="M8.5 8.5L12 12l3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 14v4.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V14" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 // ── Magnification ──────────────────────────────────────────────────────────
 const SCALE_AT_DIST: Record<number, number> = { 0: 2.35, 1: 1.5, 2: 1.18 };
@@ -114,10 +130,11 @@ export interface DockHandProps {
   onRequestHide?: () => void;
   /**
    * Touch dock behaviour (mobile). The desktop dock magnifies the hovered
-   * card to 2.35x and floats Play/View over it — a mouse affordance that made
-   * no sense under a finger, where the "hover" is the tap itself and the blown
-   * -up card covered the board. With this on the card is never scaled: a tap
-   * RAISES it slightly and opens the same action bubble the mobile field uses
+   * card to 2.35x and hangs the field's action pills off its right edge — a
+   * mouse affordance that made no sense under a finger, where the "hover" is
+   * the tap itself and the blown-up card covered the board. With this on the
+   * card is never scaled: a tap RAISES it slightly and opens the same action
+   * bubble the mobile field uses
    * (see .op-mobile-card-action-bubble), so hand cards and field cards are
    * operated the exact same way.
    */
@@ -395,25 +412,54 @@ function DockHandCard({
       </div>
 
       {isHoveredCard && showFaces && !tapActions && (
-        <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-1.5 px-1">
-          {canPlay && (
-            <button
-              type="button"
-              aria-label={`Play ${card.name}`}
-              className="pointer-events-auto w-[80%] rounded-full bg-gold/95 py-1 text-center text-[10px] font-black uppercase tracking-[0.1em] text-navy-950 shadow-[0_2px_10px_rgba(0,0,0,0.55)] transition-colors hover:bg-gold"
-              onClick={(e) => { e.stopPropagation(); onPlay(); }}
-            >
-              Play
-            </button>
-          )}
-          <button
-            type="button"
-            aria-label="View card detail"
-            className="pointer-events-auto w-[80%] rounded-full bg-black/86 py-1 text-center text-[10px] font-black uppercase tracking-[0.1em] text-white shadow-[0_2px_10px_rgba(0,0,0,0.55)] transition-colors hover:bg-black"
-            onClick={(e) => { e.stopPropagation(); onZoom(); }}
+        /*
+         * Hand-card actions, in the FIELD's language: the same opaque
+         * CardActionButton pills BoardCardTile hangs off a hovered Character,
+         * stacked to the RIGHT of the card rather than floating over its art.
+         *
+         * They used to sit centred on the card — two translucent pills over a
+         * full-bleed illustration, which is both the least readable backdrop
+         * on screen and the exact thing the 2.35x magnify exists to let you
+         * look at. Off to the side they have a flat light background of their
+         * own, and hand and field stop speaking two different visual
+         * languages for "what can I do with this card".
+         *
+         * The inner counter-scale is why this needs two elements: the buttons
+         * are children of the magnified card, so at 2.35x a 7.5rem pill would
+         * render ~280px wide. `scale(1 / scale)` about `left center` puts them
+         * back at their native size, pinned to the card's magnified right edge
+         * (local x = 100% maps exactly there under the parent's
+         * bottom-centre-origin scale) and centred on its middle.
+         *
+         * pointer-events live on the INNER box only. The outer wrapper is the
+         * unscaled 7.5rem-wide box — visually ~280px of invisible surface that
+         * would swallow hover for the neighbouring cards. The bridge between
+         * the card edge and the first button is inner padding, not an outer
+         * margin, so crossing it never leaves the card's subtree and never
+         * cancels the hover that is drawing these buttons.
+         */
+        <div className="pointer-events-none absolute left-full top-1/2 z-40 -translate-y-1/2">
+          <div
+            className="pointer-events-auto flex flex-col items-stretch gap-1 pl-1.5"
+            style={{ transform: `scale(${1 / scale})`, transformOrigin: 'left center' }}
           >
-            View
-          </button>
+            {canPlay && (
+              <CardActionButton
+                icon={<PlayActionIcon />}
+                label="Play"
+                ariaLabel={`Play ${card.name}`}
+                title="Play this card"
+                onClick={onPlay}
+              />
+            )}
+            <CardActionButton
+              iconSrc="/ui-icons/action-view-detail.png"
+              label="View Detail"
+              ariaLabel={`View details for ${card.name}`}
+              title="View detail"
+              onClick={onZoom}
+            />
+          </div>
         </div>
       )}
 

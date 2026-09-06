@@ -41,7 +41,7 @@ import { useTutorialPersistenceStore } from './TutorialPersistence';
 
 import { TutorialLoadingScreen } from './TutorialLoadingScreen';
 import { TutorialOverlay } from './TutorialOverlay';
-import { TutorialSidebar, TUTORIAL_SIDEBAR_WIDTH, TUTORIAL_SIDEBAR_COLLAPSED_WIDTH } from './TutorialSidebar';
+import { TutorialSidebar, useTutorialRailSlotRect, TUTORIAL_SIDEBAR_WIDTH, TUTORIAL_SIDEBAR_COLLAPSED_WIDTH } from './TutorialSidebar';
 
 import { EMPTY_BEAT_PROGRESS, noteProgress as writeProgress, progressFor as readProgress, type BeatProgress } from './tutorialBeatProgress';
 import { playTutorialCue } from './sound';
@@ -94,8 +94,28 @@ export function TutorialManager({ scenarioId, onLeaveScenario }: { scenarioId: T
   /** A scripted step the engine refused. Non-fatal: the board stays up so the player can Restart the chapter. */
   const [scriptError, setScriptError] = useState<string | null>(null);
   const [railCollapsed, setRailCollapsed] = useState(false);
+  /**
+   * The rail is a column of MatchScreen's desktop grid, between the board and
+   * the battle log. This is the live rect of that column; null on layouts
+   * that render no such column (mobile), where the rail falls back to the
+   * viewport's right edge and the board wrapper reserves the space instead.
+   */
+  const railSlotRect = useTutorialRailSlotRect();
   /** Bumped to force a rebuild; `jumpTarget` says which beat to fast-forward to. */
   const [rebuild, setRebuild] = useState({ nonce: 0, jumpTarget: 0 });
+  /**
+   * Publishes the rail's width to MatchScreen's desktop grid, which sizes the
+   * `#tutorial-rail-slot` track from it. Set on <html> rather than passed as a
+   * prop because MatchScreen is rendered by TutorialManager but knows nothing
+   * about the tutorial beyond `screen === 'tutorial'`.
+   */
+  useEffect(() => {
+    const width = railCollapsed ? TUTORIAL_SIDEBAR_COLLAPSED_WIDTH : TUTORIAL_SIDEBAR_WIDTH;
+    document.documentElement.style.setProperty('--op-tutorial-rail-width', `${width}px`);
+    return () => {
+      document.documentElement.style.removeProperty('--op-tutorial-rail-width');
+    };
+  }, [railCollapsed]);
   useEffect(() => {
     setRebuild({ nonce: 0, jumpTarget: 0 });
     setBeatIndex(0);
@@ -418,7 +438,20 @@ export function TutorialManager({ scenarioId, onLeaveScenario }: { scenarioId: T
           the whole point of the rail: MatchScreen puts the hand dock along the
           bottom edge and the action bar just above it, so any floating tutorial
           chrome sits exactly where the player has to click. */}
-      <div style={{ position: 'fixed', inset: 0, right: railWidth, overflow: 'hidden', transition: 'right 160ms ease' }}>
+      {/* On desktop the rail is a grid column INSIDE this board (see
+          TutorialSidebar's doc comment), so nothing is reserved here —
+          `railSlotRect` being non-null is exactly the signal that the grid
+          took the space. Mobile has no such column, so there the board is
+          still inset by the rail's width. */}
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          right: railSlotRect ? 0 : railWidth,
+          overflow: 'hidden',
+          transition: 'right 160ms ease',
+        }}
+      >
         <MatchScreen />
       </div>
       <TutorialOverlay
@@ -460,6 +493,7 @@ export function TutorialManager({ scenarioId, onLeaveScenario }: { scenarioId: T
         onExit={() => handleFinishOrExit(false)}
         collapsed={railCollapsed}
         onToggleCollapsed={() => setRailCollapsed((value) => !value)}
+        hostRect={railSlotRect}
       />
     </>
   );

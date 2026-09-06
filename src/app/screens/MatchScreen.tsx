@@ -178,6 +178,18 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   // collapsed per design — the log is opt-in, not something that eats
   // 330px of board width every match.
   const [desktopLogOpen, setDesktopLogOpen] = useState(false);
+  /**
+   * The tutorial embeds this same board and needs its instruction rail to be
+   * part of the layout rather than an overlay floating over it, so on that
+   * screen the desktop grid grows a fourth track between the board and the
+   * battle log. The track's width comes from `--op-tutorial-rail-width`,
+   * which TutorialManager sets as the rail collapses/expands; the cell itself
+   * is an empty spacer that features/tutorial/TutorialSidebar.tsx pins itself
+   * over (it has to paint above TutorialOverlay's fixed dim bars, which no
+   * descendant of this z-10 section can do). Nothing else on this screen
+   * knows about the tutorial, and no other screen renders the track at all.
+   */
+  const isTutorialBoard = current.screen === 'tutorial';
   // Desktop-only floating prompt popup for ActionBar's inline "must respond"
   // instructions (hovers over the board instead of living inline in the
   // Actions aside — see actionBarHasBlockingPrompt's doc comment).
@@ -908,7 +920,16 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
 
         <div
           className="hidden min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden xl:grid"
-          style={{ gridTemplateColumns: `330px minmax(0,1fr) ${desktopLogOpen ? '330px' : '2.75rem'}` }}
+          style={{
+            gridTemplateColumns: [
+              '330px',
+              'minmax(0,1fr)',
+              isTutorialBoard ? 'var(--op-tutorial-rail-width, 340px)' : null,
+              desktopLogOpen ? '330px' : '2.75rem',
+            ]
+              .filter(Boolean)
+              .join(' '),
+          }}
         >
           {leftPanelOverride}
           <aside className={[leftPanelOverride ? 'hidden' : 'flex', 'min-h-0 flex-col border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]'].join(' ')}>
@@ -1171,6 +1192,12 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               style={{ position: 'absolute', inset: 0, zIndex: 110, pointerEvents: 'none', overflow: 'visible' }}
             />
           </div>
+
+          {/* Tutorial rail cell — see isTutorialBoard. Deliberately empty: the
+              rail is fixed-positioned over this rect so it clears the
+              tutorial's dim overlay, and this cell exists only to reserve the
+              column between the board and the battle log. */}
+          {isTutorialBoard && <div id="tutorial-rail-slot" className="min-h-0" aria-hidden="true" />}
 
           {/* Collapsible battle-log sidebar — default collapsed to a slim
               strip; opening it doesn't reflow the board (the middle column
@@ -2557,12 +2584,29 @@ function OnlineOpponentTurnOverlay({ opponentName }: { opponentName: string }) {
 }
 
 /**
+ * Minimum width of the hand toggle tab.
+ *
+ * Content-sized, the control measures ~94px (eye icon + "HAND: N" at 10px/
+ * 0.14em + px-2.5 + borders); this is 4x that, so it reads as a wide dock
+ * handle rather than a small button. It is not only a button: hovering it is
+ * what forces the hand dock open (`handToggleHovered`), so the width is also
+ * the size of that hover target. Capped against the viewport so the mobile
+ * instance, on a ~390px-wide phone, still sits clear of both screen edges.
+ */
+const HAND_TOGGLE_MIN_WIDTH = 'min(376px, 78vw)';
+
+/**
  * Compact hand show/hide toggle docked at the top (opponent) or bottom
  * (player) center edge of the board. Small square-ish control: an eye icon
  * plus the live hand count ("Hand: N"); the Show/Hide label is surfaced only
  * as a hover tooltip over the icon, not as a permanent inline label. Both
  * instances drive the same shared `handsHidden` state, so toggling either
  * hides/reveals both hands.
+ *
+ * The desktop instance sits at z-240, above the hand dock's hovered strip
+ * (z-220 — see DockHand): the tab has to stay readable and clickable while
+ * the dock is open and magnifying a card under the cursor, and at its old
+ * z-180 the 2.35x hover card drew straight over it.
  */
 function HandToggle({
   position,
@@ -2591,7 +2635,7 @@ function HandToggle({
     <div
       className={[
         'absolute left-1/2 -translate-x-1/2',
-        mobile ? 'z-[110] xl:hidden' : 'z-[180] hidden xl:block',
+        mobile ? 'z-[110] xl:hidden' : 'z-[240] hidden xl:block',
         isTop ? 'top-0' : 'bottom-0',
       ].join(' ')}
     >
@@ -2601,10 +2645,11 @@ function HandToggle({
         onMouseEnter={() => onHoverChange(true)}
         onMouseLeave={() => onHoverChange(false)}
         className={[
-          'group relative flex items-center gap-1.5 border border-white/15 bg-black/72 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/80 shadow-[0_6px_20px_rgba(0,0,0,0.45)] backdrop-blur transition hover:border-gold/60 hover:text-gold',
+          'group relative flex items-center justify-center gap-1.5 border border-white/15 bg-black/72 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/80 shadow-[0_6px_20px_rgba(0,0,0,0.45)] backdrop-blur transition hover:border-gold/60 hover:text-gold',
           // Flush with the board edge, so the edge-facing side is squared off.
           isTop ? 'rounded-b-lg border-t-0' : 'rounded-t-lg border-b-0',
         ].join(' ')}
+        style={{ minWidth: HAND_TOGGLE_MIN_WIDTH }}
         aria-pressed={!handsHidden}
         aria-label={tooltip}
       >
@@ -2987,6 +3032,22 @@ function MatchGameShell({ title, headerRight, children }: { title: string; heade
           "not quite the same grey" framing the screen, and the fix costs
           nothing. */}
       <div className="pointer-events-none absolute -inset-16 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-70" />
+      {/* Vertical shade over the blurred backdrop. Symmetric on purpose: the
+          board is mirrored top/bottom, so a one-way ramp would darken one
+          player's half and not the other's. It sinks the two screen edges —
+          exactly where the hand docks, their toggles and the action chrome
+          sit — and leaves the middle (the mats and the battle line) at the
+          backdrop's own value, so nothing on the board is dimmed. Sits above
+          the artwork but below GlitterWrap and the z-10 board section, and is
+          inset-0 rather than overscanned: it is a flat gradient with no blur
+          to sample from outside its box. */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            'linear-gradient(180deg, rgba(2,5,14,0.72) 0%, rgba(2,5,14,0.34) 18%, rgba(2,5,14,0) 42%, rgba(2,5,14,0) 58%, rgba(2,5,14,0.34) 82%, rgba(2,5,14,0.72) 100%)',
+        }}
+      />
       {/* Layer 5 (animation/visual polish) — decorative starfield warp, below
           the actual board content (z-10 section). Reads/writes nothing in
           GameState. */}

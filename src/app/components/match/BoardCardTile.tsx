@@ -5,7 +5,7 @@
  * card-local action buttons; every click still routes through the engine
  * action dispatcher via the parent selection hook.
  */
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { CardImage } from '../CardImage';
 import { useCardFlightHidden } from '../../hooks/useCardFlightHidden';
@@ -86,14 +86,27 @@ export interface BoardCardTileProps {
   };
 }
 
-function CardActionButton({
+/**
+ * The board's one card-action control: a light, opaque pill with an icon and a
+ * short label, sized so a row of them reads as a menu rather than as chrome
+ * scattered over the art.
+ *
+ * Exported because the hand dock hangs the SAME buttons off a hovered hand
+ * card (DockHand's Play / View Detail) — hand and field should not have two
+ * different visual languages for "here is what you can do with this card".
+ * `icon` is the escape hatch for an action with no icon file in
+ * public/ui-icons yet; pass exactly one of `icon` / `iconSrc`.
+ */
+export function CardActionButton({
   iconSrc,
+  icon,
   label,
   ariaLabel,
   title,
   onClick,
 }: {
-  iconSrc: string;
+  iconSrc?: string;
+  icon?: ReactNode;
   label: string;
   ariaLabel: string;
   title: string;
@@ -107,7 +120,11 @@ function CardActionButton({
       title={title}
       className="flex h-8 min-w-[7.5rem] items-center gap-1.5 rounded-md border border-rose-200/75 bg-rose-100/95 px-2 text-[0.58rem] font-black uppercase leading-none tracking-[0.04em] text-slate-950 shadow-[0_8px_20px_rgba(0,0,0,0.42)] transition hover:bg-white"
     >
-      <img src={iconSrc} alt="" className="h-4 w-4 shrink-0 object-contain" />
+      {iconSrc ? (
+        <img src={iconSrc} alt="" className="h-4 w-4 shrink-0 object-contain" />
+      ) : (
+        <span className="flex h-4 w-4 shrink-0 items-center justify-center">{icon}</span>
+      )}
       <span className="truncate">{label}</span>
     </button>
   );

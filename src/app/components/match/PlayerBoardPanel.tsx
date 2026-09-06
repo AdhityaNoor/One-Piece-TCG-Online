@@ -934,8 +934,20 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   // nothing — Leader is centred and Stage was already at that edge with a
   // spare track beside it. allowOverflow stays because the pile's ghost
   // layers deliberately draw outside their cell.
+  //
+  // z-30 is the other half of allowOverflow. Every other MatCell is
+  // `position: relative` with z-index auto, so they paint in DOM order — and
+  // the deck is the one cell whose content deliberately leaves its own box.
+  // The pile grows UP out of row 2, straight into the zone above it (the
+  // Character Area for the bottom seat, Trash + the Cost Area for the
+  // mirrored one), and those cells' borders and backgrounds were painting
+  // over the ghost layers and shaving the top of the pile. Raising the cell
+  // makes the pile the foremost thing on the mat, which is what it is
+  // physically: a stack of cards standing proud of a flat playmat. It also
+  // creates a stacking context, so the top card and its CountBadge stay
+  // ordered among themselves exactly as before.
   const deckCell = (
-    <MatCell label="Deck" className="flex-shrink-0" labelClassName="sr-only" allowOverflow padding="p-0">
+    <MatCell label="Deck" className="z-30 flex-shrink-0" labelClassName="sr-only" allowOverflow padding="p-0">
       <div data-board-zone="deck" data-board-player={board.playerId}>
         <PileStack label="Deck" count={board.deckCount} variant="deck" size="field" reverseRows={reverseRows} boardFocused={boardFocused} playerId={board.playerId} />
       </div>
