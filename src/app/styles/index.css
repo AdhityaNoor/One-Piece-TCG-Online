@@ -1978,6 +1978,69 @@
   }
 }
 
+/*
+ * Saved-decks showcase — cycling to the next/previous deck.
+ *
+ * The shelf moves, the box does not: pressing the RIGHT arrow walks forward
+ * along the shelf, so the incoming box enters from the right and everything
+ * slides left. `-next` is therefore an enter-from-the-right, `-prev` an
+ * enter-from-the-left. Restarted by remounting on a bumped key, since the
+ * element itself never leaves the DOM.
+ *
+ * The peek variants are deliberately shorter in travel: the neighbours sit in
+ * fixed crop windows, so a large offset would just slide them out of their own
+ * window and back, which reads as a flicker rather than as motion.
+ */
+@keyframes op-deck-slide-next {
+  from {
+    opacity: 0;
+    transform: translateX(26%) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes op-deck-slide-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-26%) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes op-deck-peek-next {
+  from {
+    opacity: 0;
+    transform: translateX(55%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes op-deck-peek-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-55%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .op-deck-slide {
+    animation: none !important;
+  }
+}
+
 @keyframes op-mobile-log-toast-life {
   0% {
     opacity: 0;
