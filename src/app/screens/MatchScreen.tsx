@@ -65,32 +65,9 @@ import { usePhaseAnnounceStore } from '../store/phaseAnnounceStore';
 import type { CardView, PlayerBoardView } from '../../board/projection';
 import { logEffectText, logSourceCardLabel } from '../lib/logDisplay';
 import { buildBugReportCardOptions } from '../lib/bugReportCardOptions';
-import { EFFECT_RUNTIME_LABEL, EFFECT_RUNTIME_MODE } from '../config/effectRuntimeMode';
 import type { AssetCacheManager } from '../../cards/assets/assetCache';
 import { createCacheStorageAssetManager } from '../../cards/assets/cacheStorageAssetManager';
 import { preloadMatchAssets } from '../lib/matchAssetPreload';
-
-function EffectRuntimeBadge() {
-  const summary = useMatchStore((s) => s.v2EffectRuntime?.summary);
-  const primitiveUsage = summary?.primitiveUsage;
-  const label = EFFECT_RUNTIME_MODE === 'v2' && summary
-    ? primitiveUsage
-      ? `${EFFECT_RUNTIME_LABEL} sidecar: ${summary.v2AbilityCount} abilities, ${primitiveUsage.implementedUsages} native / ${primitiveUsage.bridgeOnlyUsages} bridge / ${primitiveUsage.plannedUsages} planned`
-      : `${EFFECT_RUNTIME_LABEL} sidecar: ${summary.v2AbilityCount} abilities, ${summary.legacyWarningCount} bridge gaps`
-    : EFFECT_RUNTIME_LABEL;
-  return (
-    <span
-      className={[
-        'rounded-sm border px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.18em]',
-        EFFECT_RUNTIME_MODE === 'v2'
-          ? 'border-cyan-200/40 bg-cyan-950/50 text-cyan-100'
-          : 'border-white/10 bg-white/5 text-white/45',
-      ].join(' ')}
-    >
-      {label}
-    </span>
-  );
-}
 
 export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNode } = {}) {
   const current = useCurrentScreen();
@@ -109,7 +86,6 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const startError = useMatchStore((s) => s.startError);
   const startMatch = useMatchStore((s) => s.startMatch);
   const resetMatch = useMatchStore((s) => s.reset);
-  const v2EffectSidecars = useMatchStore((s) => s.v2EffectSidecars);
   // Presentation seat binding (null == hotseat). Drives fixed-perspective +
   // username labelling for Casual matches; never touches GameState.
   const localPlayerId = useMatchStore((s) => s.localPlayerId);
@@ -459,15 +435,13 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
 
   const bottomPlayerBoard = useMemo(() => {
     if (!matchState || !bottomPlayerIdSafe) return null;
-    const v2Projection = EFFECT_RUNTIME_MODE === 'v2' ? { sidecars: v2EffectSidecars } : undefined;
-    return projectPlayerBoard(matchState, defs, images, bottomPlayerIdSafe, v2Projection, effectRegistry);
-  }, [matchState, defs, images, bottomPlayerIdSafe, v2EffectSidecars, effectRegistry]);
+    return projectPlayerBoard(matchState, defs, images, bottomPlayerIdSafe, effectRegistry);
+  }, [matchState, defs, images, bottomPlayerIdSafe, effectRegistry]);
 
   const topPlayerBoard = useMemo(() => {
     if (!matchState || !topPlayerIdSafe) return null;
-    const v2Projection = EFFECT_RUNTIME_MODE === 'v2' ? { sidecars: v2EffectSidecars } : undefined;
-    return projectPlayerBoard(matchState, defs, images, topPlayerIdSafe, v2Projection, effectRegistry);
-  }, [matchState, defs, images, topPlayerIdSafe, v2EffectSidecars, effectRegistry]);
+    return projectPlayerBoard(matchState, defs, images, topPlayerIdSafe, effectRegistry);
+  }, [matchState, defs, images, topPlayerIdSafe, effectRegistry]);
 
   const battlePowerInstanceIds = useMemo(() => {
     if (!matchState?.currentBattle) return new Set<string>();
@@ -803,7 +777,6 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{matchModeLabel}</p>
-              <EffectRuntimeBadge />
             </div>
             <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Actions</h2>
             <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.12em] text-white/48">
@@ -938,7 +911,6 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{matchModeLabel}</p>
-                    <EffectRuntimeBadge />
                   </div>
                   <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Actions</h2>
                   <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.12em] text-white/48">

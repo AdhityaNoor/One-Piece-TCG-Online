@@ -24,14 +24,6 @@ import type { CardDefinitionLookup } from '../../engine/rules/shared';
 import { mintRuntimeInstanceId } from '../../engine/rules/shared/mintInstance';
 import type { EffectTemplateRegistry } from '../../engine/effects';
 import { buildCuratedEffectRegistry } from '../../cards/effectTemplates';
-import { buildV2EffectRuntimeRegistry } from '../../cards/effectCompiler_V2/runtimeCatalog_V2';
-import type { EffectRuntimeBundle_V2 } from '../../engine/effects_V2/runtime_V2';
-import { createEmptyEffectRuntimeSidecars_V2, type EffectRuntimeSidecars_V2 } from '../../engine/effects_V2/dispatcher_V2';
-import { validateDeckConstruction_V2 } from '../../engine/effects_V2/deckConstruction_V2';
-import {
-  applyV2EffectsForAction,
-  executeV2ActionOverride,
-} from '../../engine/effects_V2/engineAdapter_V2';
 import { hashSeed } from '../../engine/rng';
 import { createPreGameState, resolveDonDeckSize, type PlayerSetupInput } from '../../engine/setup';
 import type { CardDefinition, CardInstance } from '../../engine/state/card';
@@ -45,7 +37,6 @@ import { parseSoundCues, soundManager } from '../../audio';
 import { useSettingsStore } from './settingsStore';
 import { useCardAnimationStore } from './cardAnimationStore';
 import { usePhaseAnnounceStore } from './phaseAnnounceStore';
-import { EFFECT_RUNTIME_MODE } from '../config/effectRuntimeMode';
 import { createTrajectoryRecorder, hashCardDataForCardNumbers, type TrajectoryRecorder } from '../../engine/replay';
 import { generateLegalActions } from '../../ai';
 import { submitTrajectory } from '../../multiplayer/net/trajectoryClient';
@@ -99,15 +90,7 @@ function presentLogDelta(
  * explicit reviewed program in /src/cards/effectTemplates/curatedPrograms.ts.
  */
 function buildRegistryFromDefs(defs: CardDefinitionLookup): EffectTemplateRegistry {
-  if (EFFECT_RUNTIME_MODE === 'v2') return {};
   return buildCuratedEffectRegistry(defs);
-}
-
-function buildV2RuntimeFromDefs(defs: CardDefinitionLookup): EffectRuntimeBundle_V2 | null {
-  if (EFFECT_RUNTIME_MODE !== 'v2') return null;
-  const result = buildV2EffectRuntimeRegistry(defs);
-  console.info(`[effects:v2] loaded ${result.summary.v2AbilityCount} native V2 abilities for ${result.summary.cardCount} cards.`);
-  return result.runtime;
 }
 
 function savedDeckMainEntries(deck: SavedDeck): DeckConstructionEntry[] {
@@ -115,11 +98,6 @@ function savedDeckMainEntries(deck: SavedDeck): DeckConstructionEntry[] {
     definition: snapshot.definition,
     quantity: snapshot.quantity,
   }));
-}
-
-function validateSavedDeckConstruction_V2(deck: SavedDeck, runtime: EffectRuntimeBundle_V2): string[] {
-  return validateDeckConstruction_V2(deck.leader.definition, savedDeckMainEntries(deck), runtime).reasons
-    .map((reason) => `${deck.name}: ${reason}`);
 }
 
 /**
@@ -520,10 +498,6 @@ interface MatchStoreState {
   defs: CardDefinitionLookup;
   /** Curated card effects injected into every validate/execute call, so [On Play]/[Activate: Main]/etc. fire in-game. Keyed by cardNumber (== cardDefinitionId). */
   registry: EffectTemplateRegistry;
-  /** Opt-in V2 sidecar. Loaded only in dev:v2; not passed into V1 validate/execute until a V2 interpreter exists. */
-  v2EffectRuntime: EffectRuntimeBundle_V2 | null;
-  /** Non-authoritative V2 simulation sidecars. Kept outside GameState so V1 gameplay remains authoritative. */
-  v2EffectSidecars: EffectRuntimeSidecars_V2 | null;
   /** cardDefinitionId -> cosmetic image URL, for board/zoom UI only — never read by the engine. See savedDeckToSetupInput.ts. */
   cardImagesByDefinitionId: Record<string, string | null>;
   /** engine playerId -> resolved cosmetic accessory art (deck/DON sleeves, DON card art), for the board projection only — never read by the engine. See savedDeckToSetupInput.ts buildAccessoriesByPlayer. */
@@ -614,8 +588,6 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   state: null,
   defs: {},
   registry: {},
-  v2EffectRuntime: null,
-  v2EffectSidecars: null,
   cardImagesByDefinitionId: {},
   accessoriesByPlayerId: {},
   startedWithDeckIds: null,
@@ -638,37 +610,6 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     const p1Input = savedDeckToPlayerSetupInput(deckA, PLAYER_A_ID);
     const p2Input = savedDeckToPlayerSetupInput(deckB, PLAYER_B_ID);
     const defs = buildCardDefinitionLookup([deckA, deckB]);
-    const v2EffectRuntime = buildV2RuntimeFromDefs(defs);
-
-    if (EFFECT_RUNTIME_MODE === 'v2' && v2EffectRuntime) {
-      const v2DeckReasons = [
-        ...validateSavedDeckConstruction_V2(deckA, v2EffectRuntime),
-        ...validateSavedDeckConstruction_V2(deckB, v2EffectRuntime),
-      ];
-      if (v2DeckReasons.length > 0) {
-        set({
-          state: null,
-          defs: {},
-          registry: {},
-          v2EffectRuntime: null,
-          v2EffectSidecars: null,
-          cardImagesByDefinitionId: {},
-          accessoriesByPlayerId: {},
-          startedWithDeckIds: null,
-          startError: v2DeckReasons,
-          localPlayerId: null,
-          playerNames: {},
-          cpuPlayerIds: [],
-          cpuDifficulty: 'normal',
-          cpuDebug: false,
-          playTestMode: false,
-          onlineMode: false,
-          onlineSendIntent: null,
-        });
-        return { ok: false, reasons: v2DeckReasons };
-      }
-    }
-
     const isCpu = presentation?.mode === 'cpu';
     const localPlayerId = presentation?.localPlayerId ?? (isCpu ? PLAYER_A_ID : null);
     const playerNames = presentation?.playerNames ?? {};
@@ -704,8 +645,6 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
         state: null,
         defs: {},
         registry: {},
-        v2EffectRuntime: null,
-        v2EffectSidecars: null,
         cardImagesByDefinitionId: {},
         accessoriesByPlayerId: {},
         startedWithDeckIds: null,
@@ -726,8 +665,6 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       state: result.state,
       defs,
       registry: buildRegistryFromDefs(defs),
-      v2EffectRuntime,
-      v2EffectSidecars: v2EffectRuntime ? createEmptyEffectRuntimeSidecars_V2() : null,
       cardImagesByDefinitionId: buildCardImageLookup([deckA, deckB]),
       accessoriesByPlayerId: buildAccessoriesByPlayer([
         { playerId: PLAYER_A_ID, deck: deckA },
@@ -783,13 +720,10 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
 
   hydrateOnlineMatch({ state, defs, images = {}, localPlayerId, playerNames, sendIntent }) {
     useCardAnimationStore.getState().clear();
-    const v2EffectRuntime = buildV2RuntimeFromDefs(defs);
     set({
       state,
       defs,
       registry: buildRegistryFromDefs(defs),
-      v2EffectRuntime,
-      v2EffectSidecars: v2EffectRuntime ? createEmptyEffectRuntimeSidecars_V2() : null,
       cardImagesByDefinitionId: images,
       // Online matches don't (yet) sync deck accessories; default chrome falls
       // back automatically when a seat has no resolved accessories.
@@ -818,7 +752,7 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       const error = createPlayTestError('Could not start Play Test.', { reasons: setup.reasons });
       const errors = [...get().playTestErrors, error];
       persistPlayTestErrors(errors);
-      set({ state: null, v2EffectRuntime: null, v2EffectSidecars: null, startError: setup.reasons, playTestMode: true, playTestErrors: errors, onlineMode: false, onlineSendIntent: null });
+      set({ state: null, startError: setup.reasons, playTestMode: true, playTestErrors: errors, onlineMode: false, onlineSendIntent: null });
       return { ok: false, reasons: setup.reasons };
     }
 
@@ -831,18 +765,15 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       const error = createPlayTestError('Engine rejected generated Play Test setup.', { reasons: result.reasons });
       const errors = [...get().playTestErrors, error];
       persistPlayTestErrors(errors);
-      set({ state: null, v2EffectRuntime: null, v2EffectSidecars: null, startError: result.reasons, playTestMode: true, playTestErrors: errors, onlineMode: false, onlineSendIntent: null });
+      set({ state: null, startError: result.reasons, playTestMode: true, playTestErrors: errors, onlineMode: false, onlineSendIntent: null });
       return { ok: false, reasons: result.reasons };
     }
 
     const lookups = buildPlayTestLookups(entries);
-    const v2EffectRuntime = buildV2RuntimeFromDefs(lookups.defs);
     set({
       state: readyPlayTestState(result.state),
       defs: lookups.defs,
       registry: buildRegistryFromDefs(lookups.defs),
-      v2EffectRuntime,
-      v2EffectSidecars: v2EffectRuntime ? createEmptyEffectRuntimeSidecars_V2() : null,
       cardImagesByDefinitionId: lookups.images,
       accessoriesByPlayerId: {},
       startedWithDeckIds: null,
@@ -1061,7 +992,7 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   },
 
   dispatch(action) {
-    const { state, defs, registry, localPlayerId, playTestMode, onlineMode, onlineSendIntent, v2EffectRuntime, v2EffectSidecars } = get();
+    const { state, defs, registry, localPlayerId, playTestMode, onlineMode, onlineSendIntent } = get();
     if (!state) {
       return { ok: false, reasons: ['No match is in progress.'] };
     }
@@ -1075,33 +1006,6 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     }
     if (action.type === 'RETURN_GIVEN_DON' && localPlayerId !== null && get().cpuPlayerIds.length === 0) {
       return { ok: false, reasons: ['Returning given DON!! is not allowed in Casual matches.'] };
-    }
-    if (EFFECT_RUNTIME_MODE === 'v2' && v2EffectRuntime) {
-      try {
-        const handled = executeV2ActionOverride({
-          state,
-          defs,
-          runtime: v2EffectRuntime,
-          sidecars: v2EffectSidecars,
-          action,
-        });
-        if (handled.handled) {
-          if (!handled.ok) {
-            if (playTestMode) get().recordPlayTestError('V2 Play Test action failed validation.', { actionType: action.type, reasons: handled.reasons, details: { action } });
-            return { ok: false, reasons: handled.reasons };
-          }
-          const { cardImagesByDefinitionId } = get();
-          presentLogDelta(state, handled.log, cardImagesByDefinitionId, localPlayerId);
-          set({ state: handled.state, v2EffectSidecars: handled.sidecars });
-          recordAcceptedAction(action, handled.state, recordedLegalCount);
-          finalizeRecordingIfFinished(handled.state);
-          return { ok: true };
-        }
-      } catch (e) {
-        const message = e instanceof Error ? e.message : String(e);
-        if (playTestMode) get().recordPlayTestError('V2 Play Test action threw during execution.', { actionType: action.type, reasons: [message], details: { action } });
-        return { ok: false, reasons: [message] };
-      }
     }
     const validation = validateAction(state, action, defs, registry);
     if (!validation.legal) {
@@ -1124,36 +1028,8 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     }
     const { cardImagesByDefinitionId } = get();
     presentLogDelta(state, result.log, cardImagesByDefinitionId, localPlayerId);
-    let nextState = result.state;
-    let nextLog = result.log;
-    let nextV2EffectSidecars = v2EffectSidecars;
-    if (v2EffectRuntime) {
-      try {
-        const applied = applyV2EffectsForAction({
-          previousState: state,
-          state: result.state,
-          defs,
-          runtime: v2EffectRuntime,
-          sidecars: v2EffectSidecars,
-          action,
-          log: result.log,
-        });
-        nextState = applied.state;
-        nextLog = [...nextLog, ...applied.log];
-        nextV2EffectSidecars = applied.sidecars;
-      } catch (e) {
-        const message = e instanceof Error ? e.message : String(e);
-        if (playTestMode) {
-          get().recordPlayTestError('V2 effect execution threw after core execution.', { actionType: action.type, reasons: [message], details: { action } });
-        } else {
-          console.warn('[effects:v2] effect execution failed', e);
-        }
-      }
-    }
-    if (nextLog.length > result.log.length) {
-      presentLogDelta(result.state, nextLog.slice(result.log.length), cardImagesByDefinitionId, localPlayerId);
-    }
-    set({ state: nextState, v2EffectSidecars: nextV2EffectSidecars });
+    const nextState = result.state;
+    set({ state: nextState });
     recordAcceptedAction(action, nextState, recordedLegalCount);
     finalizeRecordingIfFinished(nextState);
     return { ok: true };
@@ -1168,6 +1044,6 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     cpuTrajectoryRecorder = null;
     useCardAnimationStore.getState().clear();
     usePhaseAnnounceStore.getState().clear();
-    set({ state: null, defs: {}, registry: {}, v2EffectRuntime: null, v2EffectSidecars: null, cardImagesByDefinitionId: {}, accessoriesByPlayerId: {}, startedWithDeckIds: null, startError: null, localPlayerId: null, playerNames: {}, cpuPlayerIds: [], cpuDifficulty: 'normal', cpuDebug: false, playTestMode: false, onlineMode: false, onlineSendIntent: null });
+    set({ state: null, defs: {}, registry: {}, cardImagesByDefinitionId: {}, accessoriesByPlayerId: {}, startedWithDeckIds: null, startError: null, localPlayerId: null, playerNames: {}, cpuPlayerIds: [], cpuDifficulty: 'normal', cpuDebug: false, playTestMode: false, onlineMode: false, onlineSendIntent: null });
   },
 }));

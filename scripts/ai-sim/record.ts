@@ -43,7 +43,7 @@ for (let i = 0; i < games; i++) {
   // action cap never fires and the whole run hangs on one game. The arena
   // already learned this; recording needs the same guard.
   const opts: HarnessOptions = {
-    mode: 'v1', difficulty, seed: `selfplay-${difficulty}-${i}`, maxActions: 2500,
+    difficulty, seed: `selfplay-${difficulty}-${i}`, maxActions: 2500,
     deadlineMs: Number(process.argv.find((a) => a.startsWith('--deadline='))?.split('=')[1] ?? 40000),
   };
 

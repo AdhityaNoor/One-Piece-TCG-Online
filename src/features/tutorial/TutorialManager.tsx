@@ -190,8 +190,6 @@ export function TutorialManager({ scenarioId, onLeaveScenario }: { scenarioId: T
           // 'off' scenarios get {}; the effect scenarios get the real curated
           // registry. See tutorialScenario.ts.
           registry: scenario.registry,
-          v2EffectRuntime: null,
-          v2EffectSidecars: null,
           cardImagesByDefinitionId: scenario.images,
           startedWithDeckIds: { a: 'tutorial', b: 'tutorial', presentationKey: `tutorial-${rebuild.nonce}` },
           startError: null,

@@ -2,7 +2,6 @@ import { buildDeckFor, buildRig, loadCatalog, runMatch, type HarnessOptions } fr
 import { actionLabel } from '../../src/ai/utilities/legalActions';
 import type { CpuDifficulty } from '../../src/ai';
 
-const mode = (process.argv.find((a) => a.startsWith('--mode='))?.split('=')[1] ?? 'v1') as 'v1' | 'v2';
 const difficulty = (process.argv.find((a) => a.startsWith('--diff='))?.split('=')[1] ?? 'hard') as CpuDifficulty;
 const leaderA = process.argv.find((a) => a.startsWith('--leaderA='))?.split('=')[1] ?? 'OP01-001';
 const leaderB = process.argv.find((a) => a.startsWith('--leaderB='))?.split('=')[1] ?? 'OP01-002';
@@ -15,7 +14,7 @@ const la = byNum.get(leaderA);
 const lb = byNum.get(leaderB);
 if (!la || !lb) throw new Error(`unknown leader ${leaderA}/${leaderB}`);
 
-const opts: HarnessOptions = { mode, difficulty, seed, maxActions: 3000 };
+const opts: HarnessOptions = { difficulty, seed, maxActions: 3000 };
 const rig = buildRig(la, buildDeckFor(la, catalog), lb, buildDeckFor(lb, catalog), opts);
 
 const counts: Record<string, number> = {};
@@ -37,7 +36,7 @@ const result = runMatch(rig, {
   },
 });
 
-console.log(`\n=== mode=${mode} diff=${difficulty} ${leaderA} vs ${leaderB} ===`);
+console.log(`\n=== diff=${difficulty} ${leaderA} vs ${leaderB} ===`);
 console.log(`actions=${result.actions} stuck=${result.stuck} gameOver=${rig.state.gameOver} turns=${rig.state.turnNumber}`);
 console.log(`life p1=${rig.state.players.p1.lifeArea.cardIds.length} p2=${rig.state.players.p2.lifeArea.cardIds.length}`);
 console.log(`board p1=${rig.state.players.p1.characterArea.cardIds.length} p2=${rig.state.players.p2.characterArea.cardIds.length}`);

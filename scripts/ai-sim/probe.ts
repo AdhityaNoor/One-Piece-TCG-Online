@@ -7,7 +7,6 @@ import { buildStrategicContext } from '../../src/ai/evaluation/stateEvaluator';
 import { getActingPlayerId } from '../../src/board/projection';
 import type { CpuDifficulty } from '../../src/ai';
 
-const mode = (process.argv.find((a) => a.startsWith('--mode='))?.split('=')[1] ?? 'v1') as 'v1' | 'v2';
 const difficulty = (process.argv.find((a) => a.startsWith('--diff='))?.split('=')[1] ?? 'hard') as CpuDifficulty;
 const stopTurn = Number(process.argv.find((a) => a.startsWith('--turn='))?.split('=')[1] ?? '7');
 const watch = process.argv.find((a) => a.startsWith('--watch='))?.split('=')[1] ?? 'p1';
@@ -17,7 +16,7 @@ const catalog = loadCatalog();
 const byNum = new Map(catalog.map((d) => [d.cardNumber, d]));
 const la = byNum.get('OP01-001')!;
 const lb = byNum.get('OP01-002')!;
-const opts: HarnessOptions = { mode, difficulty, seed };
+const opts: HarnessOptions = { difficulty, seed };
 const rig = buildRig(la, buildDeckFor(la, catalog), lb, buildDeckFor(lb, catalog), opts);
 
 let guard = 0;

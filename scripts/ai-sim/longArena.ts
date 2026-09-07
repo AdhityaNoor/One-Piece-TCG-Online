@@ -112,7 +112,6 @@ while (checkpoint.cursor < target * Object.keys(POOLS).length) {
   const plan = scheduleFor(checkpoint.cursor);
   const bSeat = plan.aSeat === 'p1' ? 'p2' : 'p1';
   const opts: HarnessOptions = {
-    mode: 'v1',
     difficulty,
     seed: plan.seed,
     maxActions: 2500,

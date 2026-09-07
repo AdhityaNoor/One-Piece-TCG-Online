@@ -138,8 +138,6 @@ describe('Match screen Phase 0 performance baseline', () => {
       state: rig.state,
       defs: rig.defs,
       registry: {},
-      v2EffectRuntime: null,
-      v2EffectSidecars: null,
       cardImagesByDefinitionId: Object.fromEntries(Object.keys(rig.defs).map((id) => [id, null])),
       startedWithDeckIds: null,
       startError: null,

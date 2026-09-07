@@ -8,7 +8,6 @@ import { projectOpponentTurn } from '../../src/ai/planning/opponentTurnSimulator
 import { getActingPlayerId } from '../../src/board/projection';
 import type { CpuDifficulty } from '../../src/ai';
 
-const mode = (process.argv.find((a) => a.startsWith('--mode='))?.split('=')[1] ?? 'v1') as 'v1' | 'v2';
 const difficulty = (process.argv.find((a) => a.startsWith('--diff='))?.split('=')[1] ?? 'hard') as CpuDifficulty;
 const stopTurn = Number(process.argv.find((a) => a.startsWith('--turn='))?.split('=')[1] ?? '7');
 const watch = process.argv.find((a) => a.startsWith('--watch='))?.split('=')[1] ?? 'p1';
@@ -16,7 +15,7 @@ const seed = process.argv.find((a) => a.startsWith('--seed='))?.split('=')[1] ??
 
 const catalog = loadCatalog();
 const byNum = new Map(catalog.map((d) => [d.cardNumber, d]));
-const rig = buildRig(byNum.get('OP01-001')!, buildDeckFor(byNum.get('OP01-001')!, catalog), byNum.get('OP01-002')!, buildDeckFor(byNum.get('OP01-002')!, catalog), { mode, difficulty, seed } as HarnessOptions);
+const rig = buildRig(byNum.get('OP01-001')!, buildDeckFor(byNum.get('OP01-001')!, catalog), byNum.get('OP01-002')!, buildDeckFor(byNum.get('OP01-002')!, catalog), { difficulty, seed } as HarnessOptions);
 
 let guard = 0;
 while (guard++ < 2000 && !rig.state.gameOver) {

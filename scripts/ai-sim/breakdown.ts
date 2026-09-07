@@ -16,7 +16,7 @@ const watch = process.argv.find((a) => a.startsWith('--watch='))?.split('=')[1] 
 const seed = 'sim-1';
 const catalog = loadCatalog();
 const byNum = new Map(catalog.map((d) => [d.cardNumber, d]));
-const rig = buildRig(byNum.get('OP01-001')!, buildDeckFor(byNum.get('OP01-001')!, catalog), byNum.get('OP01-002')!, buildDeckFor(byNum.get('OP01-002')!, catalog), { mode: 'v1', difficulty, seed } as HarnessOptions);
+const rig = buildRig(byNum.get('OP01-001')!, buildDeckFor(byNum.get('OP01-001')!, catalog), byNum.get('OP01-002')!, buildDeckFor(byNum.get('OP01-002')!, catalog), { difficulty, seed } as HarnessOptions);
 
 let guard = 0;
 while (guard++ < 2000 && !rig.state.gameOver) {

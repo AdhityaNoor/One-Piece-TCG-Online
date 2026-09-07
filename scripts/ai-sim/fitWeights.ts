@@ -62,7 +62,7 @@ let finished = 0;
 for (let g = 0; g < gameCount; g++) {
   const a = decks[g % decks.length];
   const b = decks[(g + 1) % decks.length];
-  const opts: HarnessOptions = { mode: 'v1', difficulty, seed: `fit-${g}`, maxActions: 2000 };
+  const opts: HarnessOptions = { difficulty, seed: `fit-${g}`, maxActions: 2000 };
   const rig = buildRig(a.leader, a.deck, b.leader, b.deck, opts);
 
   const pending: { seat: string; x: number[] }[] = [];

@@ -98,7 +98,6 @@ export function runArena(options: RunArenaOptions): ArenaResult {
         const bSeat = aSeat === 'p1' ? 'p2' : 'p1';
         const seed = `${prefix}-${matchIndex}-${pair}`;
         const opts: HarnessOptions = {
-          mode: 'v1',
           difficulty: options.difficulty,
           seed,
           maxActions: 2500,

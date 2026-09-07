@@ -1,8 +1,8 @@
 /**
  * Headless CPU-vs-CPU harness.
  *
- * Mirrors the exact dispatch path of src/app/store/matchStore.ts (V1 registry
- * OR V2 runtime override + post-action effects) and drives BOTH seats with
+ * Mirrors the exact dispatch path of src/app/store/matchStore.ts (curated
+ * effect registry) and drives BOTH seats with
  * src/ai/chooseAction, so the AI here behaves identically to the app's
  * useCpuTurnController. Diagnostics only — nothing in /src imports this.
  */
@@ -16,10 +16,6 @@ import type { EvaluatorWeights } from '../../src/ai/evaluation/weights';
 import { executeAction, validateAction, type GameAction } from '../../src/engine/actions';
 import { createPreGameState, type PlayerSetupInput } from '../../src/engine/setup';
 import { buildCuratedEffectRegistry } from '../../src/cards/effectTemplates';
-import { buildV2EffectRuntimeRegistry } from '../../src/cards/effectCompiler_V2/runtimeCatalog_V2';
-import { createEmptyEffectRuntimeSidecars_V2, type EffectRuntimeSidecars_V2 } from '../../src/engine/effects_V2/dispatcher_V2';
-import { applyV2EffectsForAction, executeV2ActionOverride } from '../../src/engine/effects_V2/engineAdapter_V2';
-import type { EffectRuntimeBundle_V2 } from '../../src/engine/effects_V2/runtime_V2';
 import { GENERIC_DON_CARD_DEFINITION } from '../../src/cards/decks/genericDonCard';
 import { createTrajectoryRecorder, hashCardDataForCardNumbers, type TrajectoryRecorder } from '../../src/engine/replay';
 import { normalizeEngineCardDefinition } from '../../src/cards/normalization/engineDefinition';
@@ -84,7 +80,6 @@ export function buildDeckFor(leader: CardDefinition, catalog: CardDefinition[]):
 }
 
 export interface HarnessOptions {
-  mode: 'v1' | 'v2';
   difficulty: CpuDifficulty;
   seed: string;
   maxActions?: number;
@@ -121,8 +116,6 @@ export interface HarnessRig {
   state: GameState;
   defs: CardDefinitionLookup;
   registry: EffectTemplateRegistry;
-  runtime: EffectRuntimeBundle_V2 | null;
-  sidecars: EffectRuntimeSidecars_V2 | null;
   /** Present when buildRig was asked to record; see runMatch. */
   recorder?: TrajectoryRecorder;
 }
@@ -178,9 +171,7 @@ export function buildRig(
   );
   if (!created.ok) throw new Error(`createPreGameState failed: ${created.reasons.join('; ')}`);
 
-  const registry = opts.mode === 'v2' ? {} : buildCuratedEffectRegistry(defs);
-  const runtime = opts.mode === 'v2' ? buildV2EffectRuntimeRegistry(defs).runtime : null;
-  const sidecars = runtime ? createEmptyEffectRuntimeSidecars_V2() : null;
+  const registry = buildCuratedEffectRegistry(defs);
 
   const recorder = opts.record
     ? createTrajectoryRecorder({
@@ -201,41 +192,16 @@ export function buildRig(
       })
     : undefined;
 
-  return { state: created.state, defs, registry, runtime, sidecars, recorder };
+  return { state: created.state, defs, registry, recorder };
 }
 
 /** Exactly matchStore.dispatch(), minus presentation/audio. */
 export function dispatch(rig: HarnessRig, action: GameAction): { ok: boolean; reasons: string[] } {
-  const { state, defs, registry, runtime, sidecars } = rig;
-  if (runtime) {
-    const handled = executeV2ActionOverride({ state, defs, runtime, sidecars, action });
-    if (handled.handled) {
-      if (!handled.ok) return { ok: false, reasons: handled.reasons };
-      rig.state = handled.state;
-      rig.sidecars = handled.sidecars;
-      return { ok: true, reasons: [] };
-    }
-  }
+  const { state, defs, registry } = rig;
   const validation = validateAction(state, action, defs, registry);
   if (!validation.legal) return { ok: false, reasons: validation.reasons };
   const result = executeAction(state, action, defs, registry);
-  let nextState = result.state;
-  let nextSidecars = sidecars;
-  if (runtime) {
-    const applied = applyV2EffectsForAction({
-      previousState: state,
-      state: result.state,
-      defs,
-      runtime,
-      sidecars,
-      action,
-      log: result.log,
-    });
-    nextState = applied.state;
-    nextSidecars = applied.sidecars;
-  }
-  rig.state = nextState;
-  rig.sidecars = nextSidecars;
+  rig.state = result.state;
   return { ok: true, reasons: [] };
 }
 

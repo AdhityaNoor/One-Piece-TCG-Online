@@ -3,7 +3,6 @@ import { buildDeckFor, buildRig, loadCatalog, runMatch, type HarnessOptions } fr
 import type { CpuDifficulty } from '../../src/ai';
 
 const difficulty = (process.argv.find((a) => a.startsWith('--diff='))?.split('=')[1] ?? 'hard') as CpuDifficulty;
-const mode = (process.argv.find((a) => a.startsWith('--mode='))?.split('=')[1] ?? 'v1') as 'v1' | 'v2';
 const catalog = loadCatalog();
 const byNum = new Map(catalog.map((d) => [d.cardNumber, d]));
 
@@ -27,7 +26,7 @@ for (const [a, b] of selected) {
   for (const seed of ['s1', 's2']) {
     const la = byNum.get(a), lb = byNum.get(b);
     if (!la || !lb) { console.log('skip', a, b); continue; }
-    const opts: HarnessOptions = { mode, difficulty, seed: `${a}-${b}-${seed}`, maxActions: 2500 };
+    const opts: HarnessOptions = { difficulty, seed: `${a}-${b}-${seed}`, maxActions: 2500 };
     const rig = buildRig(la, buildDeckFor(la, catalog), lb, buildDeckFor(lb, catalog), opts);
     // count "empty turns": a main phase whose only action was END_MAIN_PHASE
     const perTurn = new Map<string, number>();

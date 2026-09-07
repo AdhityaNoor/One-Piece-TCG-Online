@@ -126,11 +126,9 @@ describe('migrateSavedDeck', () => {
  *
  * Why this matters: effect curation is resolved live, by cardNumber, every
  * time a match starts (see src/app/store/matchStore.ts `startMatch` ->
- * `buildRegistryFromDefs`/`buildV2RuntimeFromDefs`, both rebuilt from
- * scratch from the CURRENT `CURATED_EFFECT_PROGRAMS` /
- * `ASSIGNMENTS_BY_CARD_V2` tables on every call — see
- * src/cards/effectTemplates/curatedPrograms.ts and
- * src/cards/effectCompiler_V2/runtimeCatalog_V2.ts). If a saved deck ever
+ * `buildRegistryFromDefs`, rebuilt from scratch from the CURRENT
+ * `CURATED_EFFECT_PROGRAMS` table on every call — see
+ * src/cards/effectTemplates/curatedPrograms.ts). If a saved deck ever
  * embedded curation-specific data, an already-saved deck could go stale
  * (stuck with an old/missing effect) the moment curation work fixes or adds
  * an effect for that card number, instead of picking the fix up automatically.
