@@ -47,7 +47,15 @@ export const COSMETIC_CATALOG: CosmeticDefinition[] = [
   { id: 'banner_sunset_sea', type: 'banner', name: 'Sunset Sea', description: 'End of a long voyage.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'sunset-sea' },
   { id: 'banner_gold_rush', type: 'banner', name: 'Gold Rush', description: "The lure of One Piece itself.", rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'gold-rush' },
 
-  // Frames
+  // Frames — the hexagonal ring drawn around an UPLOADED profile photo
+  // (src/app/lib/avatarFrames.ts owns how each id renders; this file only
+  // says which exist and how they unlock). frame_hex_default is
+  // unlockSource 'default' on purpose: every uploaded photo is masked to a
+  // hexagon, so a player with no frame unlocked yet would otherwise have a
+  // masked photo with no border at all. The rest stay achievement-gated and
+  // become swappable frame ART once assets exist — see that module's
+  // `artPath` slot.
+  { id: 'frame_hex_default', type: 'frame', name: 'Standard Hex', description: 'The default hexagonal photo frame.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'frame-hex-default' },
   { id: 'frame_bronze', type: 'frame', name: 'Bronze Frame', description: 'Complete 10 matches.', rarity: 'common', unlockSource: 'achievement', unlockRequirement: 'Milestone: 10 lifetime matches', icon: 'frame-bronze' },
   { id: 'frame_silver', type: 'frame', name: 'Silver Frame', description: 'Complete 50 matches.', rarity: 'uncommon', unlockSource: 'achievement', unlockRequirement: 'Milestone: 50 lifetime matches', icon: 'frame-silver' },
   { id: 'frame_gold', type: 'frame', name: 'Gold Frame', description: 'Complete 200 matches.', rarity: 'rare', unlockSource: 'achievement', unlockRequirement: 'Milestone: 200 lifetime matches', icon: 'frame-gold' },

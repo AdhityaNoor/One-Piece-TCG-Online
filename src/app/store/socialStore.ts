@@ -136,9 +136,24 @@ export const useSocialStore = create<SocialState>((set, get) => ({
     await withPendingAction(set, get, username, async (token) => {
       await sendFriendRequest(token, username);
       set((state) => {
-        const avatarCatalogId = state.searchResults.find((entry) => entry.username === username)?.avatarCatalogId ?? null;
+        // Carry the search row's whole avatar triple across, not just the
+        // catalog id: the optimistic "Sent" row renders with the same
+        // PlayerAvatarThumb as every other list, so dropping the uploaded
+        // photo URL here would visibly swap a player's picture for their
+        // default portrait the moment you sent them a request.
+        const found = state.searchResults.find((entry) => entry.username === username);
         return {
-          outgoingRequests: [...state.outgoingRequests, { userId: username, username, requestedAt: new Date().toISOString(), avatarCatalogId }],
+          outgoingRequests: [
+            ...state.outgoingRequests,
+            {
+              userId: username,
+              username,
+              requestedAt: new Date().toISOString(),
+              avatarCatalogId: found?.avatarCatalogId ?? null,
+              avatarImageUrl: found?.avatarImageUrl ?? null,
+              avatarFrameId: found?.avatarFrameId ?? null,
+            },
+          ],
           searchResults: state.searchResults.filter((entry) => entry.username !== username),
         };
       });

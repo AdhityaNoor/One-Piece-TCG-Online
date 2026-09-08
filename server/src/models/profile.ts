@@ -18,6 +18,7 @@
 import type { ObjectId } from 'mongodb';
 import type {
   AchievementProgress,
+  CustomProfileImages,
   EquippedCosmetics,
   FeaturedDeckSummary,
   ModerationStatus,
@@ -35,6 +36,13 @@ export interface ProfileDocument {
   favoriteLeaderCardNumber: string | null;
   statusMessage: string | null;
   equippedCosmetics: EquippedCosmetics;
+  /**
+   * Player-uploaded avatar/banner (server/src/profile/profileImageService.ts).
+   * Optional because every profile document created before uploads shipped
+   * lacks it — read through EMPTY_CUSTOM_PROFILE_IMAGES rather than
+   * assuming both slots are present.
+   */
+  customImages?: CustomProfileImages;
   featuredDeckIds: string[];
   featuredDecks: FeaturedDeckSummary[]; // uploaded summaries, keyed by deckId matching featuredDeckIds
   featuredAchievementIds: string[];

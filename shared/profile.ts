@@ -121,6 +121,37 @@ export const DEFAULT_EQUIPPED_COSMETICS: EquippedCosmetics = {
   emoteSet: null,
 };
 
+/**
+ * A player-uploaded avatar or banner. Lives ALONGSIDE equippedCosmetics
+ * rather than inside it: a cosmetic id is a catalog reference the server
+ * validates against COSMETIC_CATALOG + the player's inventory, whereas this
+ * is player-generated content with its own storage lifecycle (upload,
+ * replace, delete, moderation). Conflating the two would mean either
+ * inventing fake catalog ids per player or teaching equip() to skip its
+ * ownership check — both worse than a second, explicit field.
+ *
+ * `url` is a public Vercel Blob URL. `updatedAt` doubles as the cache-buster
+ * the client appends when the CDN path is reused.
+ */
+export interface CustomProfileImage {
+  url: string;
+  width: number;
+  height: number;
+  updatedAt: string;
+}
+
+/**
+ * Null in a slot means "use the equipped catalog cosmetic instead" — the
+ * default portrait / gradient banner. Uploading never destroys the catalog
+ * selection, so removing an upload falls straight back to it.
+ */
+export interface CustomProfileImages {
+  avatar: CustomProfileImage | null;
+  banner: CustomProfileImage | null;
+}
+
+export const EMPTY_CUSTOM_PROFILE_IMAGES: CustomProfileImages = { avatar: null, banner: null };
+
 /** What GET /profile/me/cosmetics returns — inventory + what's equipped, catalog joined in. */
 export interface CosmeticInventoryEntry {
   item: CosmeticDefinition;
@@ -278,6 +309,15 @@ export interface FriendSummary {
   since: string;
   /** equippedCosmetics.avatar catalog id (e.g. 'avatar_luffy'), null if unresolved. */
   avatarCatalogId: string | null;
+  /**
+   * Uploaded custom avatar URL, joined server-side the same way
+   * avatarCatalogId is. Takes precedence over avatarCatalogId when present —
+   * every row renderer must check this FIRST, or a player who uploaded a
+   * photo would still show their old default portrait to everyone else.
+   */
+  avatarImageUrl: string | null;
+  /** Equipped frame cosmetic id, so a friend row can draw the same hex frame the profile does. */
+  avatarFrameId: string | null;
 }
 
 export interface FriendRequestSummary {
@@ -285,6 +325,8 @@ export interface FriendRequestSummary {
   username: string;
   requestedAt: string;
   avatarCatalogId: string | null;
+  avatarImageUrl: string | null;
+  avatarFrameId: string | null;
 }
 
 /** GET /profile/me/social's `blocked` entries — previously the endpoint only returned a count, with no way to render an unblock list. */
@@ -298,6 +340,8 @@ export interface PlayerSearchResult {
   userId: string;
   username: string;
   avatarCatalogId: string | null;
+  avatarImageUrl: string | null;
+  avatarFrameId: string | null;
 }
 
 // ---- match history ---------------------------------------------------------
@@ -356,6 +400,8 @@ export interface PlayerProfile {
   favoriteLeaderCardNumber: string | null;
   statusMessage: string | null;
   equippedCosmetics: EquippedCosmetics;
+  /** Player-uploaded avatar/banner overrides. Always present; either slot may be null. */
+  customImages: CustomProfileImages;
   featuredDeckIds: string[];
   featuredAchievementIds: string[];
   createdAt: string; // "Sailing Since"
@@ -413,6 +459,9 @@ export type PublicProfileErrorCode =
   | 'RATE_LIMITED'
   | 'USERNAME_TAKEN'
   | 'RESERVED_NAME'
+  | 'PAYLOAD_TOO_LARGE'
+  | 'UNSUPPORTED_MEDIA'
+  | 'STORAGE_UNAVAILABLE'
   | 'INTERNAL';
 
 export interface ProfileApiErrorBody {
@@ -448,6 +497,11 @@ export interface UpdateFeaturedDecksRequest {
 
 export interface UpdateFeaturedAchievementsRequest {
   featuredAchievementIds: string[];
+}
+
+/** POST /profile/me/images/:kind response — the whole set comes back so the client never has to merge slots itself. */
+export interface ProfileImageMutationResponse {
+  customImages: CustomProfileImages;
 }
 
 export interface EquipCosmeticRequest {

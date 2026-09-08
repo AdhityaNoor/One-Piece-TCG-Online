@@ -1,4 +1,7 @@
 export * from './AvatarPicker';
+export * from './PlayerAvatar';
+export * from './ImageCropModal';
+export * from './ProfileImageChooser';
 export * from './BannerPicker';
 export * from './Button';
 export * from './Toggle';

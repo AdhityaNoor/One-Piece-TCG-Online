@@ -4,6 +4,7 @@ import type {
   BlockedPlayerSummary,
   CosmeticInventoryEntry,
   CosmeticType,
+  CustomProfileImages,
   EquippedCosmetics,
   FriendRequestSummary,
   FriendSummary,
@@ -15,9 +16,12 @@ import type {
   StatisticsSummary,
   UpdateProfileRequest,
 } from '../../../shared/profile';
+import type { ProfileImageKind } from '../../../shared/profileImage';
 import {
   blockPlayer,
+  deleteProfileImage,
   equipCosmetic as equipCosmeticRequest,
+  fetchImageUploadStatus,
   fetchAchievements,
   fetchCosmeticInventory,
   fetchMatchHistory,
@@ -31,6 +35,7 @@ import {
   unequipCosmetic as unequipCosmeticRequest,
   updatePrivacy,
   updateProfile,
+  uploadProfileImage,
 } from '../../multiplayer/net/profileClient';
 import { avatarCatalogIdToOptionId } from '../lib/avatars';
 import { useAuthStore } from './authStore';
@@ -57,6 +62,16 @@ interface ProfileState {
   account: PrivateAccountSettings | null;
   error: string | null;
   sectionErrors: Record<string, string>;
+  /**
+   * Whether the backend has image storage configured. `null` = not asked
+   * yet, so the UI can hide the upload affordance while unknown rather than
+   * flashing a button that may turn out to be unavailable.
+   */
+  imageUploadsEnabled: boolean | null;
+  /** Slot currently uploading, so one picker can show progress without locking the other. */
+  imageUploadPending: ProfileImageKind | null;
+  /** Upload-specific failure, kept apart from `error` so a rejected file doesn't look like the profile failed to load. */
+  imageError: string | null;
 
   loadOwn(localDeckCount?: number): Promise<void>;
   loadPublic(username: string): Promise<void>;
@@ -69,6 +84,11 @@ interface ProfileState {
   blockUser(username: string): Promise<void>;
   unblockUser(username: string): Promise<void>;
   reportUser(username: string, body: ReportPlayerRequest): Promise<void>;
+  /** Replaces the uploaded photo/banner for the signed-in player. Returns true on success so the caller can close its modal. */
+  uploadImage(kind: ProfileImageKind, blob: Blob): Promise<boolean>;
+  /** Clears an upload, falling back to the equipped catalog cosmetic. */
+  removeImage(kind: ProfileImageKind): Promise<void>;
+  setImageError(error: string | null): void;
   clear(): void;
 }
 
@@ -83,6 +103,9 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   account: null,
   error: null,
   sectionErrors: {},
+  imageUploadsEnabled: null,
+  imageUploadPending: null,
+  imageError: null,
 
   async loadOwn(localDeckCount) {
     set({ status: 'loading', error: null, sectionErrors: {} });
@@ -90,6 +113,11 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       const token = requireToken();
       const header = await fetchOwnProfile(token);
       set({ header, status: 'ready' });
+      // Fire-and-forget: whether uploads are configured is a UI affordance,
+      // never a reason to fail or delay loading the profile itself.
+      void fetchImageUploadStatus(token)
+        .then(({ uploadsEnabled }) => set({ imageUploadsEnabled: uploadsEnabled }))
+        .catch(() => set({ imageUploadsEnabled: false }));
       await loadSections(set, token, undefined, header, localDeckCount);
     } catch (cause) {
       set({ status: 'error', error: message(cause) });
@@ -181,6 +209,36 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     }
   },
 
+  async uploadImage(kind, blob) {
+    set({ imageUploadPending: kind, imageError: null });
+    try {
+      const { customImages } = await uploadProfileImage(requireToken(), kind, blob);
+      applyCustomImages(set, get, customImages);
+      return true;
+    } catch (cause) {
+      set({ imageError: message(cause) });
+      return false;
+    } finally {
+      set({ imageUploadPending: null });
+    }
+  },
+
+  async removeImage(kind) {
+    set({ imageUploadPending: kind, imageError: null });
+    try {
+      const { customImages } = await deleteProfileImage(requireToken(), kind);
+      applyCustomImages(set, get, customImages);
+    } catch (cause) {
+      set({ imageError: message(cause) });
+    } finally {
+      set({ imageUploadPending: null });
+    }
+  },
+
+  setImageError(imageError) {
+    set({ imageError });
+  },
+
   clear() {
     set({
       status: 'idle',
@@ -193,9 +251,28 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       account: null,
       error: null,
       sectionErrors: {},
+      imageUploadPending: null,
+      imageError: null,
+      // imageUploadsEnabled is deliberately NOT reset: it describes the
+      // BACKEND, not the profile being viewed, so re-probing it on every
+      // navigation would just flicker the upload button off and back on.
     });
   },
 }));
+
+/**
+ * Mirrors a fresh CustomProfileImages onto the loaded header, the same way
+ * applyEquippedCosmetics does for cosmetics — a local merge rather than a
+ * refetch, so the new photo appears the instant the upload resolves.
+ */
+function applyCustomImages(set: SetFn, get: GetFn, customImages: CustomProfileImages): void {
+  const header = get().header;
+  if (!header) return;
+  set({
+    header: { ...header, profile: { ...header.profile, customImages } },
+    imageError: null,
+  });
+}
 
 type SetFn = (partial: Partial<ProfileState>) => void;
 type GetFn = () => ProfileState;

@@ -23,9 +23,11 @@ import {
   validateUsernameFormat,
 } from './validation';
 import { ProfileServiceError } from './errors';
+import { loadAvatarDisplayFields } from './avatarJoin';
 import {
   DEFAULT_EQUIPPED_COSMETICS,
   DEFAULT_PRIVACY_SETTINGS,
+  EMPTY_CUSTOM_PROFILE_IMAGES,
   type ChangeUsernameRequest,
   type FeaturedDeckSummary,
   type PlayerProfile,
@@ -58,6 +60,10 @@ function docToPlayerProfile(doc: ProfileDocument, username: string): PlayerProfi
     favoriteLeaderCardNumber: doc.favoriteLeaderCardNumber,
     statusMessage: doc.statusMessage,
     equippedCosmetics: doc.equippedCosmetics,
+    // Spread over the empty pair rather than passed through: documents
+    // written before uploads shipped have no customImages field at all, and
+    // the client reads both slots unconditionally.
+    customImages: { ...EMPTY_CUSTOM_PROFILE_IMAGES, ...(doc.customImages ?? {}) },
     featuredDeckIds: doc.featuredDeckIds,
     featuredAchievementIds: doc.featuredAchievementIds,
     createdAt: doc.createdAt,
@@ -83,6 +89,7 @@ export class ProfileService {
       favoriteLeaderCardNumber: null,
       statusMessage: null,
       equippedCosmetics: { ...DEFAULT_EQUIPPED_COSMETICS },
+      customImages: { ...EMPTY_CUSTOM_PROFILE_IMAGES },
       featuredDeckIds: [],
       featuredDecks: [],
       featuredAchievementIds: [],
@@ -355,11 +362,11 @@ export class ProfileService {
       .limit(safeLimit)
       .toArray();
     const ids = docs.map((doc) => doc._id!.toHexString());
-    const profileDocs = ids.length
-      ? await profiles().find({ userId: { $in: ids } }).project({ userId: 1, 'equippedCosmetics.avatar': 1 }).toArray()
-      : [];
-    const avatarOf = (id: string): string | null => profileDocs.find((p) => p.userId === id)?.equippedCosmetics?.avatar ?? null;
-    return docs.map((doc) => ({ userId: doc._id!.toHexString(), username: doc.username, avatarCatalogId: avatarOf(doc._id!.toHexString()) }));
+    const avatarOf = await loadAvatarDisplayFields(ids);
+    return docs.map((doc) => {
+      const userId = doc._id!.toHexString();
+      return { userId, username: doc.username, ...avatarOf(userId) };
+    });
   }
 
   async getPrivateAccountSettings(userId: string): Promise<{ email: string; emailVerified: boolean; linkedProviders: string[]; createdAt: string; usernameChangeHistory: { previousUsername: string; changedAt: string }[]; activeSessionCount: number }> {

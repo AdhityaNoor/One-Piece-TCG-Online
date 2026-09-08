@@ -16,6 +16,7 @@ import type {
   FriendSummary,
   PlayerSearchResult,
   ProfileApiErrorBody,
+  ProfileImageMutationResponse,
   ProfileHeaderResponse,
   ProfileMatchHistoryPage,
   ProfilePrivacySettings,
@@ -27,6 +28,7 @@ import type {
   UpdatePrivacyRequest,
   UpdateProfileRequest,
 } from '../../../shared/profile';
+import type { ProfileImageKind } from '../../../shared/profileImage';
 import { apiBaseUrl } from './backendConfig';
 import { readApiJson } from './apiResponse';
 
@@ -167,6 +169,39 @@ export async function blockPlayer(token: string, username: string): Promise<void
 
 export async function unblockPlayer(token: string, username: string): Promise<void> {
   await parseOrThrow(await fetch(url(`/profile/${encodeURIComponent(username)}/block`), { method: 'DELETE', headers: authHeaders(token) }));
+}
+
+// ---- uploaded profile images ---------------------------------------------
+
+/**
+ * Whether this backend can accept uploads at all. It depends on a server
+ * env var (BLOB_READ_WRITE_TOKEN), so the client cannot infer it — and
+ * showing an Upload button that always 503s is worse than not showing one.
+ */
+export async function fetchImageUploadStatus(token: string): Promise<{ uploadsEnabled: boolean }> {
+  return parseOrThrow(await fetch(url('/profile/me/images/status'), { headers: authHeaders(token) }));
+}
+
+/**
+ * Sends the cropper's encoded output as a RAW BINARY body — no multipart
+ * wrapper, no base64 field. `authHeaders` is not reused here because it
+ * pins content-type to application/json, which would route the body into
+ * the server's JSON parser (and its much smaller size limit) instead of the
+ * raw parser these two routes mount. The Content-Type sent is the blob's
+ * own; the server sniffs the bytes regardless and does not trust it.
+ */
+export async function uploadProfileImage(token: string, kind: ProfileImageKind, blob: Blob): Promise<ProfileImageMutationResponse> {
+  return parseOrThrow(
+    await fetch(url(`/profile/me/images/${kind}`), {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': blob.type || 'application/octet-stream' },
+      body: blob,
+    }),
+  );
+}
+
+export async function deleteProfileImage(token: string, kind: ProfileImageKind): Promise<ProfileImageMutationResponse> {
+  return parseOrThrow(await fetch(url(`/profile/me/images/${kind}`), { method: 'DELETE', headers: authHeaders(token) }));
 }
 
 export async function reportPlayer(token: string, username: string, body: ReportPlayerRequest): Promise<void> {

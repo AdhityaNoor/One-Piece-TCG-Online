@@ -84,6 +84,14 @@ export interface AppEnv {
    * been verified in the target environment.
    */
   profileEnabled: boolean;
+  /**
+   * Vercel Blob read/write token, used ONLY for player-uploaded profile
+   * images (server/src/profile/imageStorage.ts). Optional on purpose: an
+   * environment without it keeps working, the upload routes simply answer
+   * 503 STORAGE_UNAVAILABLE and the UI hides the upload affordance, rather
+   * than the whole backend refusing to boot over a cosmetic feature.
+   */
+  blobReadWriteToken: string | null;
 }
 
 export function loadEnv(): AppEnv {
@@ -100,6 +108,7 @@ export function loadEnv(): AppEnv {
     jwtExpiresIn: optional('JWT_EXPIRES_IN', '7d'),
     rankedEnabled: optional('RANKED_ENABLED', 'false').toLowerCase() === 'true',
     profileEnabled: optional('PROFILE_ENABLED', 'false').toLowerCase() === 'true',
+    blobReadWriteToken: optional('BLOB_READ_WRITE_TOKEN', '').trim() || null,
   };
 }
 

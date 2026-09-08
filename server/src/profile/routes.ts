@@ -10,19 +10,22 @@
  * responses (project rule: "Do not use one oversized profile endpoint for
  * every screen") rather than one endpoint returning everything.
  */
-import { Router, type Request, type Response } from 'express';
+import express, { Router, type Request, type Response } from 'express';
 import { ObjectId } from 'mongodb';
 import { env } from '../config/env';
 import { requireAuth } from '../auth/middleware';
-import { profiles, users } from '../db/mongo';
+import { users } from '../db/mongo';
 import { AchievementService } from './achievementService';
 import { CosmeticService } from './cosmeticService';
 import { MatchHistoryService } from './matchHistoryService';
 import { ModerationService } from './moderationService';
+import { ProfileImageService } from './profileImageService';
 import { ProfileService } from './profileService';
+import { loadAvatarDisplayFields } from './avatarJoin';
 import { SocialService } from './socialService';
 import { StatisticsService } from './statisticsService';
 import { ACHIEVEMENT_CATALOG } from './achievementCatalog';
+import { PROFILE_IMAGE_SPECS, isProfileImageKind } from '../../../shared/profileImage';
 import { ProfileServiceError, sendProfileError } from './errors';
 import type {
   AchievementView,
@@ -46,6 +49,7 @@ const cosmeticService = new CosmeticService();
 const socialService = new SocialService();
 const moderationService = new ModerationService();
 const matchHistoryService = new MatchHistoryService();
+const profileImageService = new ProfileImageService();
 
 function userId(req: Request): string {
   return req.auth!.sub;
@@ -184,6 +188,58 @@ export function profileRouter(): Router {
     });
   });
 
+  // ---- uploaded profile images (owner-only) --------------------------------
+
+  /**
+   * Raw binary in, not multipart and not a base64 JSON field.
+   *
+   * express.json (mounted app-wide in index.ts with a 1mb ceiling) only
+   * parses application/json, so an image/webp body flows past it untouched
+   * and this router-level parser is what reads it — which is how these two
+   * routes get their own, larger limit without widening the ceiling on
+   * every other JSON endpoint in the app. Base64-in-JSON was the
+   * alternative and would have inflated every upload by a third for
+   * nothing; multipart would have added a dependency to parse a single
+   * unnamed part.
+   *
+   * `type: () => true` accepts whatever Content-Type arrives on purpose:
+   * the declared type is not evidence of anything, and the real format
+   * check is the magic-byte sniff in validateProfileImageBytes. The limit
+   * is the largest per-kind ceiling, with the exact per-kind limit enforced
+   * by that same validator.
+   */
+  const rawImageBody = express.raw({
+    type: () => true,
+    limit: Math.max(PROFILE_IMAGE_SPECS.avatar.maxUploadBytes, PROFILE_IMAGE_SPECS.banner.maxUploadBytes),
+  });
+
+  router.get('/me/images/status', async (_req, res) => {
+    await handle(res, async () => {
+      ensureEnabled();
+      res.json({ uploadsEnabled: profileImageService.isEnabled() });
+    });
+  });
+
+  router.post('/me/images/:kind', rawImageBody, async (req, res) => {
+    await handle(res, async () => {
+      ensureEnabled();
+      const kind = req.params.kind;
+      if (!isProfileImageKind(kind)) throw new ProfileServiceError(400, 'VALIDATION', 'Image kind must be avatar or banner.');
+      const body = req.body;
+      if (!Buffer.isBuffer(body)) throw new ProfileServiceError(400, 'VALIDATION', 'Send the image as a raw binary body.');
+      res.json({ customImages: await profileImageService.upload(userId(req), kind, body) });
+    });
+  });
+
+  router.delete('/me/images/:kind', async (req, res) => {
+    await handle(res, async () => {
+      ensureEnabled();
+      const kind = req.params.kind;
+      if (!isProfileImageKind(kind)) throw new ProfileServiceError(400, 'VALIDATION', 'Image kind must be avatar or banner.');
+      res.json({ customImages: await profileImageService.remove(userId(req), kind) });
+    });
+  });
+
   router.get('/me/match-history', async (req, res) => {
     await handle(res, async () => {
       ensureEnabled();
@@ -212,18 +268,15 @@ export function profileRouter(): Router {
       }).filter((id): id is ObjectId => id !== null);
       const userDocs = ids.length ? await users().find({ _id: { $in: ids } }).project({ username: 1 }).toArray() : [];
       const usernameOf = (id: string): string => userDocs.find((u) => u._id!.toHexString() === id)?.username ?? 'Unknown Pirate';
-      // Avatar join for friend/request rows (SocialTab thumbnails) — profiles()
-      // is keyed by the same userId string as the social graph, so a plain
-      // $in on that field is enough; no ObjectId conversion needed here.
-      const rawIds = [...graph.friends, ...graph.incomingRequests, ...graph.outgoingRequests];
-      const profileDocs = rawIds.length
-        ? await profiles().find({ userId: { $in: rawIds } }).project({ userId: 1, 'equippedCosmetics.avatar': 1 }).toArray()
-        : [];
-      const avatarOf = (id: string): string | null => profileDocs.find((p) => p.userId === id)?.equippedCosmetics?.avatar ?? null;
+      // Avatar join for friend/request rows (SocialTab thumbnails). Shared
+      // with GET /profile/search via avatarJoin.ts so an uploaded photo can
+      // never show on one list and not the other — profiles() is keyed by
+      // the same userId string as the social graph, no ObjectId conversion.
+      const avatarOf = await loadAvatarDisplayFields([...graph.friends, ...graph.incomingRequests, ...graph.outgoingRequests]);
 
-      const friends: FriendSummary[] = graph.friends.map((id) => ({ userId: id, username: usernameOf(id), onlineStatus: 'unknown', favoriteLeaderCardNumber: null, since: graph.updatedAt, avatarCatalogId: avatarOf(id) }));
-      const incoming: FriendRequestSummary[] = graph.incomingRequests.map((id) => ({ userId: id, username: usernameOf(id), requestedAt: graph.updatedAt, avatarCatalogId: avatarOf(id) }));
-      const outgoing: FriendRequestSummary[] = graph.outgoingRequests.map((id) => ({ userId: id, username: usernameOf(id), requestedAt: graph.updatedAt, avatarCatalogId: avatarOf(id) }));
+      const friends: FriendSummary[] = graph.friends.map((id) => ({ userId: id, username: usernameOf(id), onlineStatus: 'unknown', favoriteLeaderCardNumber: null, since: graph.updatedAt, ...avatarOf(id) }));
+      const incoming: FriendRequestSummary[] = graph.incomingRequests.map((id) => ({ userId: id, username: usernameOf(id), requestedAt: graph.updatedAt, ...avatarOf(id) }));
+      const outgoing: FriendRequestSummary[] = graph.outgoingRequests.map((id) => ({ userId: id, username: usernameOf(id), requestedAt: graph.updatedAt, ...avatarOf(id) }));
       const blocked: BlockedPlayerSummary[] = graph.blocked.map((id) => ({ userId: id, username: usernameOf(id) }));
       res.json({ friends, incomingRequests: incoming, outgoingRequests: outgoing, blocked, blockedCount: blocked.length });
     });
