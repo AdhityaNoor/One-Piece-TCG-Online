@@ -26,34 +26,61 @@
  */
 
 /**
- * Pointy-top hexagon in a normalized 0..1 box. Pointy-top rather than
- * flat-top because a portrait's head sits in the upper middle of a square
- * crop: a flat-top hexagon's chamfered top corners cut into hair and hats,
- * while a pointy-top's widest span is at mid-height, where the face is.
+ * A REGULAR flat-top hexagon.
+ *
+ * Two things were wrong before. It was pointy-top, which fought the app's
+ * own background (public/ui/hex-poneglyph.svg is a grid of FLAT-TOP cells —
+ * see .op-hex-bg in styles/index.css), so the one hexagon on screen that
+ * was supposed to feel native was the only one facing the wrong way. And it
+ * was defined across a square 0..1 box, which is not a regular hexagon at
+ * all: six equal sides at 120 degrees require width : height = 2 : sqrt(3),
+ * so forcing it square stretched it ~15% wide and visibly bent every angle.
+ *
+ * Everything below is therefore expressed in a box of that ratio, and every
+ * consumer sizes its container to match (see HEX_BOX_HEIGHT_RATIO). Nothing
+ * renders the hexagon into a square any more.
  */
-export const HEX_POINTS_NORMALIZED: readonly (readonly [number, number])[] = [
-  [0.5, 0],
-  [1, 0.25],
-  [1, 0.75],
-  [0.5, 1],
-  [0, 0.75],
-  [0, 0.25],
-];
 
-/** `clip-path` value for a hex-masked element. */
-export const HEX_CLIP_PATH = `polygon(${HEX_POINTS_NORMALIZED.map(([x, y]) => `${x * 100}% ${y * 100}%`).join(', ')})`;
+/** width / height of the hexagon's bounding box. 2 : sqrt(3) is what makes it regular. */
+export const HEX_ASPECT = 2 / Math.sqrt(3);
+
+/** Multiply a box's WIDTH by this to get the height that keeps the hexagon regular. */
+export const HEX_BOX_HEIGHT_RATIO = Math.sqrt(3) / 2; // ~0.8660254
 
 /**
- * The same hexagon as an SVG path in a viewBox of `size`, inset by
- * `inset` so a stroke of that width sits fully inside the box instead of
- * being clipped in half by the viewBox edge.
+ * Flat-top hexagon, normalized 0..1 within a box of HEX_ASPECT. Flat edges
+ * top and bottom, vertices at the left and right mid-points — the corners
+ * land exactly on the box, so the shape fills it with no padding.
  */
-export function hexPath(size = 100, inset = 0): string {
-  const span = size - inset * 2;
+export const HEX_POINTS_NORMALIZED: readonly (readonly [number, number])[] = [
+  [0.25, 0],
+  [0.75, 0],
+  [1, 0.5],
+  [0.75, 1],
+  [0.25, 1],
+  [0, 0.5],
+];
+
+/** `clip-path` value for a hex-masked element whose box already uses HEX_ASPECT. */
+export const HEX_CLIP_PATH = `polygon(${HEX_POINTS_NORMALIZED.map(([x, y]) => `${x * 100}% ${y * 100}%`).join(', ')})`;
+
+/** viewBox for an SVG drawn over that same box. Height is derived, never assumed to equal width. */
+export const HEX_VIEWBOX_WIDTH = 100;
+export const HEX_VIEWBOX_HEIGHT = 100 * HEX_BOX_HEIGHT_RATIO;
+export const HEX_VIEWBOX = `0 0 ${HEX_VIEWBOX_WIDTH} ${HEX_VIEWBOX_HEIGHT.toFixed(4)}`;
+
+/**
+ * The hexagon as an SVG path in HEX_VIEWBOX coordinates, inset by `inset`
+ * on every side so a stroke of that width sits fully inside the viewBox
+ * instead of being shaved in half at the six vertices.
+ */
+export function hexPath(inset = 0): string {
+  const width = HEX_VIEWBOX_WIDTH - inset * 2;
+  const height = HEX_VIEWBOX_HEIGHT - inset * 2;
   return (
     HEX_POINTS_NORMALIZED.map(([x, y], index) => {
-      const px = inset + x * span;
-      const py = inset + y * span;
+      const px = inset + x * width;
+      const py = inset + y * height;
       return `${index === 0 ? 'M' : 'L'}${px.toFixed(3)} ${py.toFixed(3)}`;
     }).join(' ') + ' Z'
   );

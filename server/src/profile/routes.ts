@@ -25,7 +25,7 @@ import { loadAvatarDisplayFields } from './avatarJoin';
 import { SocialService } from './socialService';
 import { StatisticsService } from './statisticsService';
 import { ACHIEVEMENT_CATALOG } from './achievementCatalog';
-import { PROFILE_IMAGE_SPECS, isProfileImageKind } from '../../../shared/profileImage';
+import { PROFILE_IMAGE_SOURCE_SPEC, PROFILE_IMAGE_SPECS, isProfileImageKind } from '../../../shared/profileImage';
 import { ProfileServiceError, sendProfileError } from './errors';
 import type {
   AchievementView,
@@ -210,12 +210,28 @@ export function profileRouter(): Router {
    */
   const rawImageBody = express.raw({
     type: () => true,
-    limit: Math.max(PROFILE_IMAGE_SPECS.avatar.maxUploadBytes, PROFILE_IMAGE_SPECS.banner.maxUploadBytes),
+    limit: Math.max(
+      PROFILE_IMAGE_SPECS.avatar.maxUploadBytes,
+      PROFILE_IMAGE_SPECS.banner.maxUploadBytes,
+      // The originals kept for repositioning are full-frame and larger than
+      // any cropped output; this parser serves those routes too.
+      PROFILE_IMAGE_SOURCE_SPEC.maxUploadBytes,
+    ),
   });
 
+  /**
+   * `no-store` is not boilerplate here. Express attaches an ETag to every
+   * res.json by default, so this endpoint answers 304 on any repeat visit
+   * and the browser replays its cached copy — which means a client that
+   * once saw `uploadsEnabled: false` would keep seeing it after the server
+   * was given a BLOB_READ_WRITE_TOKEN, with no way for the player to tell
+   * why the upload option never appeared. This reports live server
+   * configuration; it must never be served from a cache.
+   */
   router.get('/me/images/status', async (_req, res) => {
     await handle(res, async () => {
       ensureEnabled();
+      res.set('Cache-Control', 'no-store');
       res.json({ uploadsEnabled: profileImageService.isEnabled() });
     });
   });
@@ -227,7 +243,22 @@ export function profileRouter(): Router {
       if (!isProfileImageKind(kind)) throw new ProfileServiceError(400, 'VALIDATION', 'Image kind must be avatar or banner.');
       const body = req.body;
       if (!Buffer.isBuffer(body)) throw new ProfileServiceError(400, 'VALIDATION', 'Send the image as a raw binary body.');
-      res.json({ customImages: await profileImageService.upload(userId(req), kind, body) });
+      // The crop transform rides in the query string rather than the body,
+      // because the body IS the image. normalizeTransform coerces and
+      // clamps whatever arrives, so malformed params degrade to a centred,
+      // unzoomed crop instead of 400-ing an otherwise valid upload.
+      res.json({ customImages: await profileImageService.upload(userId(req), kind, body, req.query) });
+    });
+  });
+
+  router.post('/me/images/:kind/source', rawImageBody, async (req, res) => {
+    await handle(res, async () => {
+      ensureEnabled();
+      const kind = req.params.kind;
+      if (!isProfileImageKind(kind)) throw new ProfileServiceError(400, 'VALIDATION', 'Image kind must be avatar or banner.');
+      const body = req.body;
+      if (!Buffer.isBuffer(body)) throw new ProfileServiceError(400, 'VALIDATION', 'Send the image as a raw binary body.');
+      res.json({ customImages: await profileImageService.attachSource(userId(req), kind, body) });
     });
   });
 

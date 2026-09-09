@@ -11,6 +11,7 @@
 import type { CustomProfileImages, PlayerProfile } from '../../../shared/profile';
 import {
   MAX_SOURCE_FILE_BYTES,
+  PROFILE_IMAGE_SOURCE_SPEC,
   PROFILE_IMAGE_SPECS,
   formatBytes,
   type ProfileImageKind,
@@ -61,20 +62,79 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number)
   return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
 }
 
-/** Loads a File into a decoded HTMLImageElement, revoking the object URL either way. */
-export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
+export interface LoadedImage {
+  image: HTMLImageElement;
+  /**
+   * Releases the object URL backing `image.src`. The CALLER owns this and
+   * must run it once the image is no longer rendered — never on load.
+   */
+  dispose: () => void;
+}
+
+/**
+ * Decodes a File into an HTMLImageElement whose object URL stays ALIVE.
+ *
+ * Revoking on load looks tidy and is wrong here. The decoded element keeps
+ * its bitmap, so `new Image()` resolves fine — but the cropper renders a
+ * *separate* `<img>` from `image.src`, and that fetch needs the blob URL to
+ * still resolve. Revoking early left the crop stage showing a broken-image
+ * icon while every measurement and the eventual canvas export worked
+ * perfectly, which is a confusing failure to look at: the picture is gone
+ * but nothing errors.
+ */
+export function loadImageFromFile(file: File): Promise<LoadedImage> {
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
     const image = new Image();
-    image.onload = () => {
-      URL.revokeObjectURL(objectUrl);
-      resolve(image);
-    };
+    image.onload = () => resolve({ image, dispose: () => URL.revokeObjectURL(objectUrl) });
     image.onerror = () => {
       URL.revokeObjectURL(objectUrl);
       reject(new Error('That image could not be read.'));
     };
     image.src = objectUrl;
+  });
+}
+
+/**
+ * Re-encodes the picked image as the ORIGINAL to keep for repositioning.
+ *
+ * Not the raw File: that can be an 8MB phone photo, and the only thing this
+ * copy is ever used for is re-opening the cropper. Capping the long edge at
+ * PROFILE_IMAGE_SOURCE_SPEC.maxEdge keeps it a few hundred KB while leaving
+ * far more detail than any crop needs. Images already under the cap are
+ * still re-encoded, so the stored source is always WebP and always passes
+ * the same validator.
+ */
+export async function encodeSourceCopy(image: HTMLImageElement): Promise<Blob> {
+  const { maxEdge } = PROFILE_IMAGE_SOURCE_SPEC;
+  const longest = Math.max(image.naturalWidth, image.naturalHeight);
+  const ratio = longest > maxEdge ? maxEdge / longest : 1;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(image.naturalWidth * ratio));
+  canvas.height = Math.max(1, Math.round(image.naturalHeight * ratio));
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('This browser could not process the image.');
+  context.imageSmoothingQuality = 'high';
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return encodeCanvas(canvas);
+}
+
+/**
+ * Loads a stored source image back off the Blob CDN for re-cropping.
+ *
+ * `crossOrigin = 'anonymous'` is required, not defensive: the cropper draws
+ * this image to a canvas and calls toBlob, and without a CORS-clean fetch
+ * the canvas is tainted and toBlob throws a SecurityError. Vercel Blob
+ * serves `Access-Control-Allow-Origin: *`, so the anonymous request
+ * succeeds and the canvas stays clean.
+ */
+export function loadImageFromUrl(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('That image could not be loaded for editing.'));
+    image.src = url;
   });
 }
 

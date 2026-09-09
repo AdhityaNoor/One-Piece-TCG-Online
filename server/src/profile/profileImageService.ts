@@ -19,7 +19,12 @@
 import { profiles } from '../db/mongo';
 import { ProfileServiceError } from './errors';
 import { deleteProfileImage, isImageStorageConfigured, storeProfileImage } from './imageStorage';
-import { validateProfileImageBytes, type ProfileImageKind } from '../../../shared/profileImage';
+import {
+  normalizeTransform,
+  validateProfileImageBytes,
+  type ProfileImageKind,
+  type ProfileImageTransform,
+} from '../../../shared/profileImage';
 import { EMPTY_CUSTOM_PROFILE_IMAGES, type CustomProfileImages } from '../../../shared/profile';
 
 /** Maps a validation rejection onto the wire error code the client branches on. */
@@ -53,7 +58,12 @@ export class ProfileImageService {
     return { ...EMPTY_CUSTOM_PROFILE_IMAGES, ...(doc.customImages ?? {}) };
   }
 
-  async upload(userId: string, kind: ProfileImageKind, body: Buffer): Promise<CustomProfileImages> {
+  async upload(
+    userId: string,
+    kind: ProfileImageKind,
+    body: Buffer,
+    transform?: unknown,
+  ): Promise<CustomProfileImages> {
     this.requireStorage();
 
     const validation = validateProfileImageBytes(kind, new Uint8Array(body));
@@ -80,6 +90,12 @@ export class ProfileImageService {
         width: validation.header.width,
         height: validation.header.height,
         updatedAt: nowIso,
+        // Carried over, not cleared: a re-crop replaces the displayed image
+        // while reusing the SAME source, and dropping the reference here
+        // would orphan the blob and silently disable "Adjust" after the
+        // first adjustment.
+        sourceUrl: previous[kind]?.sourceUrl ?? null,
+        transform: normalizeTransform(transform),
       },
     };
 
@@ -90,6 +106,44 @@ export class ProfileImageService {
 
     // Only now is the old object unreferenced.
     await deleteProfileImage(previous[kind]?.url ?? null);
+    return next;
+  }
+
+  /**
+   * Stores the ORIGINAL image behind a crop, so the player can reposition it
+   * later without re-picking the file.
+   *
+   * Called AFTER upload() and treated as best-effort by the client: if it
+   * fails, the player still has the photo they just set, and the UI simply
+   * offers "Replace" instead of "Adjust". Making the photo itself depend on
+   * this succeeding would trade a working feature for a nice-to-have one.
+   */
+  async attachSource(userId: string, kind: ProfileImageKind, body: Buffer): Promise<CustomProfileImages> {
+    this.requireStorage();
+
+    const validation = validateProfileImageBytes(kind, new Uint8Array(body), 'source');
+    if (!validation.ok) {
+      const mapped = REJECTION_STATUS[validation.reason] ?? { status: 400, code: 'VALIDATION' as const };
+      throw new ProfileServiceError(mapped.status, mapped.code, validation.message);
+    }
+
+    const previous = await this.readCustomImages(userId);
+    const existing = previous[kind];
+    if (!existing) {
+      throw new ProfileServiceError(409, 'VALIDATION', 'Upload the cropped image before its source.');
+    }
+
+    let stored;
+    try {
+      stored = await storeProfileImage(userId, `${kind}-source`, validation.header.format, body);
+    } catch (cause) {
+      console.error('[profile] blob source upload failed:', cause);
+      throw new ProfileServiceError(502, 'STORAGE_UNAVAILABLE', 'Could not store the original image.');
+    }
+
+    const next: CustomProfileImages = { ...previous, [kind]: { ...existing, sourceUrl: stored.url } };
+    await profiles().updateOne({ userId }, { $set: { customImages: next, updatedAt: new Date().toISOString() } });
+    await deleteProfileImage(existing.sourceUrl);
     return next;
   }
 
@@ -108,7 +162,11 @@ export class ProfileImageService {
       { userId },
       { $set: { customImages: next, updatedAt: nowIso }, $inc: { profileVersion: 1 } },
     );
+    // BOTH blobs — the displayed crop and the original behind it. Deleting
+    // only the crop leaves the source permanently unreachable, since the
+    // one document field that pointed at it has just been cleared.
     await deleteProfileImage(previous[kind]?.url ?? null);
+    await deleteProfileImage(previous[kind]?.sourceUrl ?? null);
     return next;
   }
 }

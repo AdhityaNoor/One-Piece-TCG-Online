@@ -17,7 +17,7 @@
  * it and a class name can't be read back at runtime.
  */
 import { avatarCatalogIdToOptionId, resolveAvatarUrl } from '../lib/avatars';
-import { HEX_CLIP_PATH, hexPath, resolveAvatarFrame } from '../lib/avatarFrames';
+import { HEX_BOX_HEIGHT_RATIO, HEX_CLIP_PATH, HEX_VIEWBOX, hexPath, resolveAvatarFrame } from '../lib/avatarFrames';
 
 export interface PlayerAvatarProps {
   /** Uploaded photo URL. When set, this wins over `catalogAvatarId` — never render both. */
@@ -26,9 +26,22 @@ export interface PlayerAvatarProps {
   catalogAvatarId?: string | null;
   /** Equipped frame cosmetic id; only consulted for uploaded photos. */
   frameId?: string | null;
+  /**
+   * WIDTH in px. The height is derived from the hexagon's ratio, never set
+   * independently — a box that isn't 2 : sqrt(3) cannot hold a regular
+   * hexagon, and forcing one into a square is what bent every angle.
+   */
   size: number;
-  /** Rendered above everything (a hover scrim, an online dot). */
+  /** Rendered above everything, unclipped (an online dot, a badge). */
   children?: React.ReactNode;
+  /**
+   * Rendered above the photo and CLIPPED to the same silhouette — a hover
+   * scrim, an "edit" affordance. Kept separate from `children` because only
+   * this component knows which silhouette applies: an uploaded photo is
+   * hex-masked, a catalog portrait is not, and a caller guessing wrong
+   * paints a rectangle over a hexagon.
+   */
+  overlay?: React.ReactNode;
   className?: string;
   alt?: string;
 }
@@ -39,15 +52,18 @@ export function PlayerAvatar({
   frameId,
   size,
   children,
+  overlay,
   className,
   alt = '',
 }: PlayerAvatarProps) {
   const custom = Boolean(imageUrl);
   const frame = resolveAvatarFrame(frameId);
-  // Thin rings vanish at 28px and look heavy at 128px, so the stroke tracks
-  // the size instead of being a constant, with a floor so it never
-  // sub-pixels away entirely.
-  const strokeWidth = Math.max(2, Math.round(size * 0.045));
+  const hexHeight = Math.round(size * HEX_BOX_HEIGHT_RATIO);
+  // Stroke is in viewBox units (the box is 100 wide), so it scales with the
+  // avatar automatically. It is not a single constant because a ring that
+  // reads correctly at 124px is a hairline at 34px: small avatars get a
+  // proportionally heavier ring so the frame survives a friend-list row.
+  const strokeWidth = size < 48 ? 7 : size < 96 ? 5.5 : 4.5;
 
   if (!custom) {
     return (
@@ -61,6 +77,7 @@ export function PlayerAvatar({
           draggable={false}
           className="h-full w-full object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]"
         />
+        {overlay}
         {children}
       </span>
     );
@@ -71,7 +88,7 @@ export function PlayerAvatar({
       className={['relative inline-flex shrink-0', className ?? ''].join(' ')}
       style={{
         width: size,
-        height: size,
+        height: hexHeight,
         filter: frame.glowColor ? `drop-shadow(0 0 ${Math.round(size * 0.08)}px ${frame.glowColor})` : undefined,
       }}
     >
@@ -84,6 +101,7 @@ export function PlayerAvatar({
         style={{ clipPath: HEX_CLIP_PATH }}
       >
         <img src={imageUrl!} alt={alt} draggable={false} className="h-full w-full object-cover" />
+        {overlay}
       </span>
 
       {/* Frame layer. Art when a frame provides it, otherwise the generated
@@ -98,7 +116,7 @@ export function PlayerAvatar({
         />
       ) : (
         <svg
-          viewBox="0 0 100 100"
+          viewBox={HEX_VIEWBOX}
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 h-full w-full"
           preserveAspectRatio="none"
@@ -106,12 +124,11 @@ export function PlayerAvatar({
           {/* Inset by half the stroke so the ring sits inside the box and
               isn't shaved by the viewBox edge at the six vertices. */}
           <path
-            d={hexPath(100, strokeWidth / 2)}
+            d={hexPath(strokeWidth / 2)}
             fill="none"
             stroke={frame.ringColor}
             strokeWidth={strokeWidth}
             strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
           />
         </svg>
       )}

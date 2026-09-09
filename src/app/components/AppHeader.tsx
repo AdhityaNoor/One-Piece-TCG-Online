@@ -10,7 +10,8 @@
  * navigationStore.ts's HubTab union) so it reads consistently with the rest
  * of the bar instead of looking like a different kind of control.
  *
- * The profile preview (avatar + username, far right) is NOT a tab — it's a
+ * The player card (level + photo + name + rank, far right) is NOT a tab —
+ * it's a
  * shortcut straight to the Pirate Profile screen, styled differently on
  * purpose so it doesn't look like a sixth tab.
  *
@@ -37,9 +38,7 @@
 import { startTransition, useLayoutEffect, useRef, useState } from 'react';
 import type { HubTab } from '../store/navigationStore';
 import { useCurrentScreen, useHeaderTab, useNavigationStore } from '../store/navigationStore';
-import { useSettingsStore } from '../store/settingsStore';
-import { resolveAvatarUrl } from '../lib/avatars';
-import { HeaderPlayerStanding } from './HeaderPlayerStanding';
+import { HeaderPlayerCard } from './HeaderPlayerCard';
 
 const TABS: { id: HubTab; label: string }[] = [
   { id: 'home', label: 'Home' },
@@ -54,8 +53,6 @@ export function AppHeader() {
   const activeTab = useHeaderTab();
   const setHubTab = useNavigationStore((state) => state.setHubTab);
   const navigateTo = useNavigationStore((state) => state.navigateTo);
-  const username = useSettingsStore((state) => state.username);
-  const avatarId = useSettingsStore((state) => state.avatarId);
   const isProfileActive = current.screen === 'profile';
 
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -210,50 +207,10 @@ export function AppHeader() {
         })}
       </nav>
 
-      {/* Rank + level, immediately left of the profile button. ml-auto moves
-          here so this block and the avatar travel together as one right-hand
-          cluster; it renders nothing when signed out. */}
-      <div className="relative z-10 ml-auto flex items-center">
-        <HeaderPlayerStanding />
-      </div>
-
-      <button
-        type="button"
-        onClick={() => startTransition(() => navigateTo({ screen: 'profile' }))}
-        aria-label="Your profile"
-        aria-current={isProfileActive ? 'page' : undefined}
-        className="group relative z-10 flex max-w-[3.25rem] flex-shrink-0 items-center gap-1.5 px-1 sm:max-w-none sm:min-w-0 sm:gap-2 sm:px-1.5"
-      >
-        {/* No fill/box behind the art — the button itself carries no
-            background either, so only the character's own silhouette (the
-            source webp's alpha) ever shows against the header. Below `sm`
-            the art gets an explicit fixed height (`h-10`, not a `h-full`
-            percentage) — percentage-height images inside a flex-stretched
-            row were rendering at the wrong intrinsic width on iOS Safari
-            specifically, ballooning the button and overlapping the nav
-            trigger next to it. A fixed rem value has no ancestor-height
-            chain to resolve against, so there's nothing left for that to go
-            wrong on. `sm:h-full` restores the original "spans the header's
-            full height" treatment once the row has the extra breathing room
-            of the desktop layout. */}
-        <img
-          src={resolveAvatarUrl(avatarId)}
-          alt=""
-          draggable={false}
-          className={[
-            'h-10 w-auto flex-shrink-0 object-contain transition-all sm:h-full sm:py-2',
-            isProfileActive ? 'drop-shadow-[0_0_6px_rgba(217,164,65,0.75)]' : 'opacity-80 group-hover:opacity-100',
-          ].join(' ')}
-        />
-        <span
-          className={[
-            'hidden min-w-0 max-w-[5rem] truncate text-left text-[11px] font-black uppercase tracking-[0.06em] transition-colors sm:inline-block sm:max-w-[7rem] sm:text-xs lg:max-w-[10rem]',
-            isProfileActive ? 'text-gold' : 'text-white/75 group-hover:text-white',
-          ].join(' ')}
-        >
-          {username}
-        </span>
-      </button>
+      {/* Level, photo, name and rank as ONE plate — see HeaderPlayerCard.
+          `ml-auto` lives on the card itself, so it is the only thing pushed
+          to the right edge and the nav keeps every pixel it had. */}
+      <HeaderPlayerCard isActive={isProfileActive} onOpen={() => startTransition(() => navigateTo({ screen: 'profile' }))} />
     </div>
 
       {/* Mobile dropdown menu — anchored to the header (which is `relative`),

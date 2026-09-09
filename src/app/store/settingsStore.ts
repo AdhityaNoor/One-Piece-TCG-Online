@@ -40,6 +40,18 @@ export interface SettingsState {
    */
   avatarId: string;
   /**
+   * Mirror of the server-side profile photo, so the app header can paint the
+   * player's real avatar without depending on profileStore — which is
+   * cleared whenever ProfileScreen unmounts, and is unloaded entirely on
+   * every other screen. Null means "no upload, use avatarId's portrait".
+   * Persisted like everything else here, so the header is correct on the
+   * very first paint after a reload instead of popping in once /profile/me
+   * resolves.
+   */
+  avatarImageUrl: string | null;
+  /** Equipped frame cosmetic id, mirrored for the same reason. */
+  avatarFrameId: string | null;
+  /**
    * Opt out of contributing finished matches to AI training data.
    *
    * When on (the default), a completed VS CPU match is recorded as an action
@@ -72,6 +84,8 @@ export interface SettingsState {
   matchNavyBackgroundEnabled: boolean;
   setUsername(value: string): void;
   setAvatarId(value: string): void;
+  /** Mirrors the server's photo/frame into the header. Called by profileStore, never by a screen. */
+  setAvatarImage(url: string | null, frameId: string | null): void;
   setDebugShowBothHands(value: boolean): void;
   setAnimationsEnabled(value: boolean): void;
   setThreeDEnabled(value: boolean): void;
@@ -87,6 +101,8 @@ export interface SettingsState {
 const DEFAULTS = {
   username: DEFAULT_USERNAME,
   avatarId: DEFAULT_AVATAR_ID,
+  avatarImageUrl: null,
+  avatarFrameId: null,
   debugShowBothHands: true,
   animationsEnabled: true,
   threeDEnabled: false,
@@ -100,6 +116,8 @@ const DEFAULTS = {
   SettingsState,
   | 'username'
   | 'avatarId'
+  | 'avatarImageUrl'
+  | 'avatarFrameId'
   | 'debugShowBothHands'
   | 'animationsEnabled'
   | 'threeDEnabled'
@@ -117,6 +135,7 @@ export const useSettingsStore = create<SettingsState>()(
       ...DEFAULTS,
       setUsername: (value) => set({ username: sanitizeUsername(value) }),
       setAvatarId: (value) => set({ avatarId: value }),
+      setAvatarImage: (avatarImageUrl, avatarFrameId) => set({ avatarImageUrl, avatarFrameId }),
       setDebugShowBothHands: (value) => set({ debugShowBothHands: value }),
       setAnimationsEnabled: (value) => {
         set({ animationsEnabled: value });

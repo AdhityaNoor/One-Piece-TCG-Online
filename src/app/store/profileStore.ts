@@ -16,7 +16,7 @@ import type {
   StatisticsSummary,
   UpdateProfileRequest,
 } from '../../../shared/profile';
-import type { ProfileImageKind } from '../../../shared/profileImage';
+import type { ProfileImageKind, ProfileImageTransform } from '../../../shared/profileImage';
 import {
   blockPlayer,
   deleteProfileImage,
@@ -36,6 +36,7 @@ import {
   updatePrivacy,
   updateProfile,
   uploadProfileImage,
+  uploadProfileImageSource,
 } from '../../multiplayer/net/profileClient';
 import { avatarCatalogIdToOptionId } from '../lib/avatars';
 import { useAuthStore } from './authStore';
@@ -84,8 +85,13 @@ interface ProfileState {
   blockUser(username: string): Promise<void>;
   unblockUser(username: string): Promise<void>;
   reportUser(username: string, body: ReportPlayerRequest): Promise<void>;
-  /** Replaces the uploaded photo/banner for the signed-in player. Returns true on success so the caller can close its modal. */
-  uploadImage(kind: ProfileImageKind, blob: Blob): Promise<boolean>;
+  /**
+   * Replaces the uploaded photo/banner. `sourceBlob` is the ORIGINAL image,
+   * stored so the crop can be adjusted later; omit it when re-cropping an
+   * upload whose source is already on the server. Returns true on success
+   * so the caller can close its modal.
+   */
+  uploadImage(kind: ProfileImageKind, blob: Blob, transform: ProfileImageTransform, sourceBlob?: Blob | null): Promise<boolean>;
   /** Clears an upload, falling back to the equipped catalog cosmetic. */
   removeImage(kind: ProfileImageKind): Promise<void>;
   setImageError(error: string | null): void;
@@ -113,6 +119,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       const token = requireToken();
       const header = await fetchOwnProfile(token);
       set({ header, status: 'ready' });
+      mirrorHeaderAvatar(header);
       // Fire-and-forget: whether uploads are configured is a UI affordance,
       // never a reason to fail or delay loading the profile itself.
       void fetchImageUploadStatus(token)
@@ -209,11 +216,25 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     }
   },
 
-  async uploadImage(kind, blob) {
+  async uploadImage(kind, blob, transform, sourceBlob) {
     set({ imageUploadPending: kind, imageError: null });
     try {
-      const { customImages } = await uploadProfileImage(requireToken(), kind, blob);
+      const token = requireToken();
+      const { customImages } = await uploadProfileImage(token, kind, blob, transform);
       applyCustomImages(set, get, customImages);
+
+      // The source is stored SECOND and its failure is swallowed: the photo
+      // the player just set is already live, and losing the ability to
+      // reposition it later is not worth showing them an error for. The UI
+      // reads sourceUrl and offers Replace instead of Adjust when it is null.
+      if (sourceBlob) {
+        try {
+          const withSource = await uploadProfileImageSource(token, kind, sourceBlob);
+          applyCustomImages(set, get, withSource.customImages);
+        } catch (cause) {
+          console.warn('[profile] could not store the original image for later repositioning:', cause);
+        }
+      }
       return true;
     } catch (cause) {
       set({ imageError: message(cause) });
@@ -268,10 +289,25 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
 function applyCustomImages(set: SetFn, get: GetFn, customImages: CustomProfileImages): void {
   const header = get().header;
   if (!header) return;
-  set({
-    header: { ...header, profile: { ...header.profile, customImages } },
-    imageError: null,
-  });
+  const next = { ...header, profile: { ...header.profile, customImages } };
+  set({ header: next, imageError: null });
+  mirrorHeaderAvatar(next);
+}
+
+/**
+ * Pushes the signed-in player's photo into settingsStore, which is what
+ * AppHeader reads. profileStore is cleared the moment ProfileScreen
+ * unmounts and is never loaded on other screens, so the header cannot read
+ * from it directly — mirroring here is what makes "change it on your
+ * profile, see it everywhere" true for uploads, the same way
+ * applyEquippedCosmetics already does it for catalog portraits.
+ */
+function mirrorHeaderAvatar(header: ProfileHeaderResponse): void {
+  if (!header.isOwner) return;
+  useSettingsStore.getState().setAvatarImage(
+    header.profile.customImages?.avatar?.url ?? null,
+    header.profile.equippedCosmetics.frame,
+  );
 }
 
 type SetFn = (partial: Partial<ProfileState>) => void;
@@ -300,6 +336,11 @@ function applyEquippedCosmetics(set: SetFn, get: GetFn, equippedCosmetics: Equip
   // reload, keeping "change it on Profile, see it everywhere" true.
   const optionId = avatarCatalogIdToOptionId(equippedCosmetics.avatar);
   if (optionId) useSettingsStore.getState().setAvatarId(optionId);
+  // A frame change is an equip too, and the header draws the frame.
+  const mirrored = get().header;
+  if (mirrored?.isOwner) {
+    useSettingsStore.getState().setAvatarImage(mirrored.profile.customImages?.avatar?.url ?? null, equippedCosmetics.frame);
+  }
 }
 
 async function loadSections(

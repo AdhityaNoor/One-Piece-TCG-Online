@@ -28,7 +28,7 @@ import type {
   UpdatePrivacyRequest,
   UpdateProfileRequest,
 } from '../../../shared/profile';
-import type { ProfileImageKind } from '../../../shared/profileImage';
+import type { ProfileImageKind, ProfileImageTransform } from '../../../shared/profileImage';
 import { apiBaseUrl } from './backendConfig';
 import { readApiJson } from './apiResponse';
 
@@ -190,9 +190,32 @@ export async function fetchImageUploadStatus(token: string): Promise<{ uploadsEn
  * raw parser these two routes mount. The Content-Type sent is the blob's
  * own; the server sniffs the bytes regardless and does not trust it.
  */
-export async function uploadProfileImage(token: string, kind: ProfileImageKind, blob: Blob): Promise<ProfileImageMutationResponse> {
+export async function uploadProfileImage(
+  token: string,
+  kind: ProfileImageKind,
+  blob: Blob,
+  transform: ProfileImageTransform,
+): Promise<ProfileImageMutationResponse> {
+  // The transform travels in the query string because the body is the image
+  // itself — see the route's comment.
+  const params = new URLSearchParams({
+    offsetX: String(transform.offsetX),
+    offsetY: String(transform.offsetY),
+    scale: String(transform.scale),
+  });
   return parseOrThrow(
-    await fetch(url(`/profile/me/images/${kind}`), {
+    await fetch(url(`/profile/me/images/${kind}?${params.toString()}`), {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': blob.type || 'application/octet-stream' },
+      body: blob,
+    }),
+  );
+}
+
+/** Stores the original behind a crop so it can be repositioned later. Best-effort — see profileImageService.attachSource. */
+export async function uploadProfileImageSource(token: string, kind: ProfileImageKind, blob: Blob): Promise<ProfileImageMutationResponse> {
+  return parseOrThrow(
+    await fetch(url(`/profile/me/images/${kind}/source`), {
       method: 'POST',
       headers: { authorization: `Bearer ${token}`, 'content-type': blob.type || 'application/octet-stream' },
       body: blob,

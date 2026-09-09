@@ -34,7 +34,8 @@ export interface StoredImage {
 
 export async function storeProfileImage(
   userId: string,
-  kind: ProfileImageKind,
+  /** Key segment: 'avatar', 'banner', or their '-source' variants. Never player-supplied. */
+  kind: ProfileImageKind | `${ProfileImageKind}-source`,
   format: ProfileImageFormat,
   body: Buffer,
 ): Promise<StoredImage> {

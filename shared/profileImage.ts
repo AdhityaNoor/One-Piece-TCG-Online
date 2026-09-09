@@ -53,31 +53,100 @@ export interface ProfileImageSpec {
 }
 
 /**
- * Avatar is square because the hexagon is a *display mask* applied at render
- * time (see src/app/lib/avatarFrames.ts), not baked into the stored pixels —
- * that way a future frame with a different silhouette can re-mask the same
- * upload instead of forcing every player to re-crop.
+ * Avatar output is 2 : sqrt(3), the bounding box of a REGULAR flat-top
+ * hexagon (see src/app/lib/avatarFrames.ts). It was square, which meant the
+ * render-time mask threw away ~13% of the height the player had framed —
+ * the crop preview and the final avatar disagreed. Matching the stored
+ * aspect to the mask's box makes the cropper honest: what is inside the
+ * hexagon on screen is exactly what is stored.
+ *
+ * The hexagon is still a mask applied at render time, not baked into the
+ * pixels, so a future frame with a different silhouette can re-mask
+ * existing uploads without forcing anyone to re-crop.
  */
 export const PROFILE_IMAGE_SPECS: Record<ProfileImageKind, ProfileImageSpec> = {
   avatar: {
     outputWidth: 512,
-    outputHeight: 512,
+    outputHeight: 444,
     maxUploadBytes: 1024 * 1024,
     maxWidth: 1024,
     maxHeight: 1024,
     minWidth: 96,
-    minHeight: 96,
+    minHeight: 84,
   },
+  /**
+   * 6:1, matched to the shape the profile hero actually paints at desktop
+   * width. This is not an arbitrary "nice banner ratio": the cropper
+   * constrains its selection to this aspect, so any mismatch between it and
+   * the display box is height the player carefully framed and then never
+   * saw. 4:1 was the first guess and lost roughly 40% of the crop.
+   */
   banner: {
-    outputWidth: 1600,
-    outputHeight: 400,
+    outputWidth: 1800,
+    outputHeight: 300,
     maxUploadBytes: 3 * 1024 * 1024,
     maxWidth: 2400,
-    maxHeight: 900,
-    minWidth: 480,
-    minHeight: 120,
+    maxHeight: 600,
+    minWidth: 600,
+    minHeight: 100,
   },
 };
+
+/**
+ * Where the player put the image inside the crop window.
+ *
+ * Offsets are NORMALIZED to the crop window (a fraction of its width and
+ * height), not pixels. The cropper's window is whatever size the modal
+ * happened to be — 420px on a desktop, 300px on a phone — so a pixel offset
+ * saved on one device restores to the wrong place on another. A fraction
+ * restores identically at any size.
+ *
+ * `scale` is relative to COVER: 1 means "just fills the window", which is
+ * why it is also the lower bound.
+ */
+export interface ProfileImageTransform {
+  offsetX: number;
+  offsetY: number;
+  scale: number;
+}
+
+export const IDENTITY_TRANSFORM: ProfileImageTransform = { offsetX: 0, offsetY: 0, scale: 1 };
+
+export const MAX_CROP_SCALE = 4;
+
+/**
+ * The ORIGINAL upload, kept so the crop can be adjusted later without
+ * asking the player to find the file again. Bigger limits than a cropped
+ * output because it is full-frame, but still capped — it is re-encoded
+ * client-side before upload and is only ever fetched by the editor, never
+ * by a profile or a friend row.
+ */
+export const PROFILE_IMAGE_SOURCE_SPEC = {
+  maxEdge: 2048,
+  maxUploadBytes: 4 * 1024 * 1024,
+  maxWidth: 2400,
+  maxHeight: 2400,
+  minWidth: 96,
+  minHeight: 84,
+} as const;
+
+/** Coerces anything (query strings, an old document, a hand-rolled request) into a usable transform. */
+export function normalizeTransform(value: unknown): ProfileImageTransform {
+  const raw = (value ?? {}) as Partial<Record<keyof ProfileImageTransform, unknown>>;
+  const num = (input: unknown, fallback: number): number => {
+    const parsed = typeof input === 'number' ? input : Number.parseFloat(String(input ?? ''));
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  // Offsets are clamped to +/-1: at any legal scale the image covers the
+  // window, so an offset beyond one full window-width could only ever be a
+  // corrupt or hostile value.
+  const clamp = (input: number, min: number, max: number): number => Math.min(max, Math.max(min, input));
+  return {
+    offsetX: clamp(num(raw.offsetX, 0), -1, 1),
+    offsetY: clamp(num(raw.offsetY, 0), -1, 1),
+    scale: clamp(num(raw.scale, 1), 1, MAX_CROP_SCALE),
+  };
+}
 
 /** Aspect ratio (width / height) the cropper constrains the selection to. */
 export function profileImageAspect(kind: ProfileImageKind): number {
@@ -224,8 +293,16 @@ export type ProfileImageValidation =
   | { ok: true; header: ImageHeader }
   | { ok: false; reason: ProfileImageRejectionReason; message: string };
 
-export function validateProfileImageBytes(kind: ProfileImageKind, bytes: Uint8Array): ProfileImageValidation {
-  const spec = PROFILE_IMAGE_SPECS[kind];
+export function validateProfileImageBytes(
+  kind: ProfileImageKind,
+  bytes: Uint8Array,
+  /** Validate against the original-upload limits instead of the cropped-output ones. */
+  variant: 'crop' | 'source' = 'crop',
+): ProfileImageValidation {
+  const spec: ProfileImageSpec =
+    variant === 'source'
+      ? { ...PROFILE_IMAGE_SPECS[kind], ...PROFILE_IMAGE_SOURCE_SPEC, outputWidth: 0, outputHeight: 0 }
+      : PROFILE_IMAGE_SPECS[kind];
 
   if (bytes.length === 0) {
     return { ok: false, reason: 'EMPTY', message: 'The uploaded image was empty.' };

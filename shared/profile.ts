@@ -25,6 +25,8 @@
 
 // ---- privacy -----------------------------------------------------------
 
+import type { ProfileImageTransform } from './profileImage';
+
 export type ProfileVisibility = 'public' | 'friends' | 'private';
 
 /** Deck-specific visibility needs one more state than the generic three. */
@@ -134,10 +136,20 @@ export const DEFAULT_EQUIPPED_COSMETICS: EquippedCosmetics = {
  * the client appends when the CDN path is reused.
  */
 export interface CustomProfileImage {
+  /** The cropped, display-ready image. This is what every profile and list row paints. */
   url: string;
   width: number;
   height: number;
   updatedAt: string;
+  /**
+   * The ORIGINAL upload, kept so the crop can be re-adjusted later without
+   * the player having to find the file again. Null when it could not be
+   * stored (best-effort — see profileImageService.attachSource), in which
+   * case the UI offers "Replace" instead of "Adjust".
+   */
+  sourceUrl: string | null;
+  /** Where the player positioned the source inside the crop window. Null for uploads made before repositioning shipped. */
+  transform: ProfileImageTransform | null;
 }
 
 /**

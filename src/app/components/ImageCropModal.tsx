@@ -29,10 +29,15 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal } from './Modal';
-import { hexPath } from '../lib/avatarFrames';
+import { HEX_VIEWBOX, HEX_VIEWBOX_HEIGHT, HEX_VIEWBOX_WIDTH, hexPath } from '../lib/avatarFrames';
 import { encodeCanvas } from '../lib/profileImages';
+import {
+  IDENTITY_TRANSFORM,
+  MAX_CROP_SCALE,
+  normalizeTransform,
+  type ProfileImageTransform,
+} from '../../../shared/profileImage';
 
-const MAX_SCALE = 4;
 /** Ceiling on the on-screen stage; the real width is measured and may be smaller. */
 const STAGE_MAX_WIDTH = 420;
 
@@ -55,16 +60,17 @@ export interface ImageCropModalProps {
   busy?: boolean;
   error?: string | null;
   confirmLabel?: string;
-  onConfirm: (blob: Blob) => void | Promise<void>;
+  /** Restores a previous crop — the whole point of being able to reposition an existing upload. */
+  initialTransform?: ProfileImageTransform | null;
+  onConfirm: (blob: Blob, transform: ProfileImageTransform) => void | Promise<void>;
 }
 
+/** Stage-pixel form of ProfileImageTransform; the normalized form is what crosses the wire. */
 interface Transform {
   offsetX: number;
   offsetY: number;
   scale: number;
 }
-
-const IDENTITY: Transform = { offsetX: 0, offsetY: 0, scale: 1 };
 
 export function ImageCropModal({
   open,
@@ -77,9 +83,10 @@ export function ImageCropModal({
   busy = false,
   error = null,
   confirmLabel = 'Save',
+  initialTransform = null,
   onConfirm,
 }: ImageCropModalProps) {
-  const [transform, setTransform] = useState<Transform>(IDENTITY);
+  const [transform, setTransform] = useState<Transform>({ ...IDENTITY_TRANSFORM });
   const stageRef = useRef<HTMLDivElement>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const gesture = useRef<{ distance: number; scale: number } | null>(null);
@@ -115,11 +122,25 @@ export function ImageCropModal({
     return Math.max(stage.width / image.naturalWidth, stage.height / image.naturalHeight);
   }, [image, stage.width, stage.height]);
 
-  // A newly picked image always starts centred at cover, never at whatever
-  // the previous image was left at.
+  /**
+   * A newly picked image starts centred at cover; an EXISTING upload being
+   * repositioned starts exactly where the player last left it. The stored
+   * offsets are fractions of the crop window, so they are multiplied back up
+   * by the measured stage here — which is also why this waits on
+   * `stage.width` rather than running on mount.
+   */
   useEffect(() => {
-    setTransform(IDENTITY);
-  }, [image]);
+    if (!image) return;
+    const saved = initialTransform ? normalizeTransform(initialTransform) : null;
+    setTransform(
+      saved
+        ? { offsetX: saved.offsetX * stage.width, offsetY: saved.offsetY * stage.height, scale: saved.scale }
+        : { ...IDENTITY_TRANSFORM },
+    );
+    // Re-seeding on every stage resize would fight the player mid-drag; this
+    // intentionally re-runs only when the image or the saved crop changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [image, initialTransform]);
 
   /**
    * Keeps the image covering the window. The overhang on each axis is half
@@ -129,7 +150,7 @@ export function ImageCropModal({
   const clamp = useCallback(
     (next: Transform): Transform => {
       if (!image) return next;
-      const scale = Math.min(MAX_SCALE, Math.max(1, next.scale));
+      const scale = Math.min(MAX_CROP_SCALE, Math.max(1, next.scale));
       const drawnWidth = image.naturalWidth * coverScale * scale;
       const drawnHeight = image.naturalHeight * coverScale * scale;
       const maxX = Math.max(0, (drawnWidth - stage.width) / 2);
@@ -187,6 +208,21 @@ export function ImageCropModal({
     if (pointers.current.size < 2) gesture.current = null;
   }
 
+  /**
+   * Keyboard/button repositioning. Dragging is the primary gesture, but it
+   * is not available to a keyboard user, it is fiddly with a trackpad at
+   * high zoom, and on a touch device a one-finger drag inside a modal is
+   * easy to mistake for a scroll. A nudge of 2% of the window per press
+   * gives a precise way to do the same thing.
+   */
+  function nudge(dx: number, dy: number) {
+    applyTransform((current) => ({
+      ...current,
+      offsetX: current.offsetX + dx * stage.width * 0.02,
+      offsetY: current.offsetY + dy * stage.height * 0.02,
+    }));
+  }
+
   function handleWheel(event: React.WheelEvent<HTMLDivElement>) {
     if (!image) return;
     // Multiplicative so a notch feels the same at every zoom level.
@@ -219,7 +255,13 @@ export function ImageCropModal({
     context.imageSmoothingQuality = 'high';
     context.drawImage(image, x, y, drawnWidth, drawnHeight);
 
-    await onConfirm(await encodeCanvas(canvas));
+    // Normalized to the crop window so it restores identically on a device
+    // whose stage is a different size — see ProfileImageTransform's doc.
+    await onConfirm(await encodeCanvas(canvas), {
+      offsetX: stage.width ? transform.offsetX / stage.width : 0,
+      offsetY: stage.height ? transform.offsetY / stage.height : 0,
+      scale: transform.scale,
+    });
   }
 
   const drawnWidth = image ? image.naturalWidth * coverScale * transform.scale : 0;
@@ -275,24 +317,36 @@ export function ImageCropModal({
                 instead. */}
             {shape === 'hex' && (
               <svg
-                viewBox="0 0 100 100"
+                viewBox={HEX_VIEWBOX}
                 preserveAspectRatio="none"
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 h-full w-full"
               >
-                <path d={`M0 0 H100 V100 H0 Z ${hexPath(100, 1)}`} fillRule="evenodd" fill="rgba(5,13,30,0.72)" />
-                <path d={hexPath(100, 1)} fill="none" stroke="rgba(217,164,65,0.8)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
+                <path
+                  d={`M0 0 H${HEX_VIEWBOX_WIDTH} V${HEX_VIEWBOX_HEIGHT} H0 Z ${hexPath(0.75)}`}
+                  fillRule="evenodd"
+                  fill="rgba(5,13,30,0.66)"
+                />
+                <path d={hexPath(0.75)} fill="none" stroke="rgba(217,164,65,0.85)" strokeWidth={1.5} />
               </svg>
             )}
           </div>
         </div>
 
-        <label className="mt-4 flex items-center gap-3">
+        <div className="mt-4 flex items-center justify-center gap-1.5">
+          <span className="mr-1 text-[10px] font-black uppercase tracking-[0.16em] text-gold">Position</span>
+          <NudgeButton label="Move left" disabled={!image} onClick={() => nudge(1, 0)} d="M15 5l-7 7 7 7" />
+          <NudgeButton label="Move up" disabled={!image} onClick={() => nudge(0, 1)} d="M5 15l7-7 7 7" />
+          <NudgeButton label="Move down" disabled={!image} onClick={() => nudge(0, -1)} d="M19 9l-7 7-7-7" />
+          <NudgeButton label="Move right" disabled={!image} onClick={() => nudge(-1, 0)} d="M9 5l7 7-7 7" />
+        </div>
+
+        <label className="mt-3 flex items-center gap-3">
           <span className="text-[10px] font-black uppercase tracking-[0.16em] text-gold">Zoom</span>
           <input
             type="range"
             min={1}
-            max={MAX_SCALE}
+            max={MAX_CROP_SCALE}
             step={0.01}
             value={transform.scale}
             disabled={!image}
@@ -302,7 +356,7 @@ export function ImageCropModal({
           />
           <button
             type="button"
-            onClick={() => setTransform(IDENTITY)}
+            onClick={() => setTransform({ ...IDENTITY_TRANSFORM })}
             disabled={!image}
             className="shrink-0 border border-white/15 bg-white/[0.04] px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/55 transition hover:border-gold/45 hover:text-gold disabled:opacity-40"
           >
@@ -331,5 +385,22 @@ export function ImageCropModal({
         </div>
       </div>
     </Modal>
+  );
+}
+
+function NudgeButton({ label, d, disabled, onClick }: { label: string; d: string; disabled?: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="grid h-8 w-8 place-items-center border border-white/15 bg-white/[0.04] text-white/60 transition hover:border-gold/45 hover:text-gold disabled:opacity-40"
+    >
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4">
+        <path d={d} strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
   );
 }

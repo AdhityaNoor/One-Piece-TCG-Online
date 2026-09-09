@@ -19,6 +19,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CosmeticType, ProfileSectionId, ProfileVisibility, ReportPlayerRequest, UpdateProfileRequest } from '../../../shared/profile';
 import type { ProfileImageKind } from '../../../shared/profileImage';
+import { levelForXp } from '../../../shared/progression';
 import { isBackendConfigured } from '../../multiplayer/net/backendConfig';
 import { Button, CanvasMenuButton, GameCanvasScreen, Modal, OpSelect, PlayerAvatar, ProfileImageChooser, RankBadge } from '../components';
 import { avatarOptionIdToCatalogId } from '../lib/avatars';
@@ -76,7 +77,13 @@ export function ProfileScreen() {
 
   return (
     <GameCanvasScreen onBack={goBack} dense>
-      <div className="flex h-full min-h-0 w-full max-w-full flex-col gap-3 overflow-y-auto overflow-x-hidden px-2 py-2 sm:gap-4 sm:px-3 lg:overflow-hidden">
+      {/* `max-w-[88rem] mx-auto` is doing real work, not centring for taste.
+          Unconstrained, this page spans whatever the monitor is: on a 1920px
+          display the banner became a 12:1 strip, the rank card floated a
+          third of a screen away from the name it belongs to, and every
+          section grid stretched its cells into near-empty bands. Capping the
+          measure fixes all three at once. */}
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-[88rem] flex-col gap-3 overflow-y-auto overflow-x-hidden px-2 py-2 sm:gap-4 sm:px-3 lg:overflow-hidden">
         <ProfileHero />
 
         <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-4">
@@ -142,75 +149,116 @@ function ProfileHero() {
   const banner = resolveProfileBanner(profile);
   const canUpload = isOwner && uploadsEnabled === true;
 
-  return (
-    <div className="w-full min-w-0 overflow-hidden rounded-sm border border-gold/25 bg-black/45 shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
-      {/* Banner. Height steps up with the viewport instead of sitting at a
-          fixed 7rem: a 4:1 image at 7rem tall on a 1440px screen reads as a
-          rule, not a banner. */}
-      <div className="relative h-24 w-full sm:h-32 lg:h-40">
-        <div className="absolute inset-0" style={{ background: banner.background }} aria-hidden="true" />
-        {/* Scrim, so white name text stays legible over an arbitrary uploaded photo. */}
-        <div
-          className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(0,0,0,0.05)_0%,_rgba(0,0,0,0.35)_65%,_rgba(2,6,18,0.9)_100%)]"
-          aria-hidden="true"
-        />
-        {isOwner && (
-          <button
-            type="button"
-            onClick={() => setChooser('banner')}
-            className="group absolute inset-0 flex items-start justify-end p-2 sm:p-3"
-            aria-label="Change banner"
-          >
-            <span className="border border-white/25 bg-black/55 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-white/80 backdrop-blur-sm transition group-hover:border-gold group-hover:text-gold sm:text-[10px]">
-              Edit Banner
-            </span>
-          </button>
-        )}
-      </div>
+  const level = levelForXp(profile.experiencePoints ?? 0);
+  // The handle is only worth its own line when it differs from the name
+  // shown above it. displayName is routinely empty on a fresh account, and
+  // falling back to the username printed "CROIXSHADOW" over "@CROIXSHADOW".
+  const displayName = profile.displayName?.trim() || profile.username;
+  const showHandle = displayName.toLowerCase() !== profile.username.toLowerCase();
 
-      <div className="-mt-10 flex flex-col items-center gap-4 px-4 pb-4 text-center sm:-mt-12 sm:px-5 sm:pb-5 lg:flex-row lg:items-end lg:gap-5 lg:text-left">
+  // The banner is the BACKDROP for this whole card, not a strip stacked
+  // above the identity row. As a strip it was the largest element on the
+  // page and carried no information — a ~1380x210 field of empty gradient
+  // that pushed the name, photo and rank into a cramped band beneath it and
+  // made the header nearly 300px tall before any content. Behind the
+  // content it does the job a banner is actually for at zero cost in
+  // vertical space, and the header collapses to ~200px. Everything above
+  // the backdrop sits in one `relative` layer, so the scrims can be tuned
+  // for legibility without touching layout.
+  return (
+    <div className="group/hero relative w-full min-w-0 overflow-hidden rounded-sm border border-gold/25 shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
+      <div className="absolute inset-0" style={{ background: banner.background }} aria-hidden="true" />
+      {/* Two scrims, each with a job. The horizontal one guarantees contrast
+          for the name block on the left whatever the uploaded artwork is;
+          the vertical one seats the card on the page and keeps the top edge
+          from competing with the app header. */}
+      <div
+        className="absolute inset-0 bg-[linear-gradient(90deg,_rgba(2,6,18,0.94)_0%,_rgba(2,6,18,0.72)_34%,_rgba(2,6,18,0.22)_58%,_rgba(2,6,18,0.62)_100%)]"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(2,6,18,0.45)_0%,_rgba(2,6,18,0)_35%,_rgba(2,6,18,0.5)_100%)]"
+        aria-hidden="true"
+      />
+
+      {/* Edit affordances are HOVER actions, not permanent chrome. A button
+          parked on your own banner is a control you see every visit and use
+          about twice; revealing it on hover keeps the card clean without
+          hiding the capability.
+
+          The `[@media(hover:none)]` escape hatch is not optional: a touch
+          device never fires hover, so without it this control would be
+          unreachable on a phone. There it stays visible permanently.
+          `focus-visible` covers keyboard users for the same reason. */}
+      {isOwner && (
+        <button
+          type="button"
+          onClick={() => setChooser('banner')}
+          aria-label="Change banner"
+          className="absolute right-2 top-2 z-10 flex items-center gap-1.5 border border-white/25 bg-black/60 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-white/80 opacity-0 backdrop-blur-sm transition-opacity duration-150 hover:border-gold hover:text-gold focus-visible:opacity-100 group-hover/hero:opacity-100 sm:right-3 sm:top-3 sm:text-[10px] [@media(hover:none)]:opacity-100"
+        >
+          <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+            <path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16v4z" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Banner
+        </button>
+      )}
+
+      <div className="relative flex flex-col items-center gap-4 px-4 py-5 text-center sm:px-5 lg:flex-row lg:items-center lg:gap-6 lg:px-6 lg:py-6 lg:text-left">
         <div className="relative shrink-0">
           {isOwner ? (
             <button
               type="button"
               onClick={() => setChooser('avatar')}
               aria-label="Change profile photo"
-              className="group relative block"
+              className="group/avatar relative block rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
             >
-              <HeroAvatar avatar={avatar} />
-              <span className="pointer-events-none absolute inset-x-0 -bottom-1 flex justify-center">
-                <span className="border border-white/20 bg-black/70 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.14em] text-white/70 transition group-hover:border-gold group-hover:text-gold">
-                  Edit
-                </span>
-              </span>
+              <HeroAvatar avatar={avatar} withEditOverlay />
             </button>
           ) : (
             <HeroAvatar avatar={avatar} />
           )}
         </div>
 
-        <div className="min-w-0 flex-1 lg:pb-1">
-          <h2 className="truncate font-display text-xl font-black uppercase tracking-[0.08em] text-white sm:text-2xl lg:text-3xl">
-            {profile.displayName}
+        <div className="min-w-0 flex-1">
+          <h2 className="min-w-0 truncate font-display text-xl font-black uppercase tracking-[0.08em] text-white sm:text-2xl lg:text-3xl">
+            {displayName}
           </h2>
-          <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">@{profile.username}</p>
-          {profile.statusMessage && (
-            <p className="mt-2 line-clamp-2 text-sm leading-5 text-slate-200/70">{profile.statusMessage}</p>
-          )}
+          {/* Level sits on its own line under the name rather than inline
+              beside it: inline, a long display name pushed the chip onto a
+              wrapped second row anyway, so the layout was already two lines
+              — just an unpredictable two. */}
+          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 lg:justify-start">
+            <span className="shrink-0 border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-gold">
+              Lv {level.level}
+            </span>
+            {showHandle && (
+              <span className="min-w-0 truncate text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">@{profile.username}</span>
+            )}
+          </div>
+          {profile.statusMessage && <p className="mt-2 line-clamp-2 text-sm leading-5 text-slate-200/75">{profile.statusMessage}</p>}
           <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white/35">
             Sailing Since {formatDate(profile.createdAt)}
           </p>
         </div>
 
-        {/* Rank card. `lg:w-72` rather than a flex ratio: it holds three
-            fixed-length lines, so letting it grow with the name column just
-            spreads them apart. */}
-        <div className="flex w-full min-w-0 items-center gap-3 rounded-sm border border-white/10 bg-black/35 p-3 text-left lg:w-72 lg:shrink-0">
+        {/* Rank, with NO panel behind it.
+            A filled, bordered card here is a solid rectangle parked on top
+            of the player's banner — it blocks the one part of this screen
+            they chose themselves, and the heavier the card the more banner
+            it hides. The badge and its two lines sit directly on the
+            backdrop instead; legibility comes from the text's own shadow
+            plus the hero's right-edge scrim, neither of which occludes the
+            artwork. Fixed width because it holds three short lines and
+            letting it grow only spreads them apart. */}
+        <div className="flex w-full min-w-0 items-center justify-center gap-3 text-left sm:w-auto lg:w-[17rem] lg:shrink-0 lg:justify-end">
           <RankBadge rank={ranked?.rank} division={ranked?.division} inPlacement={ranked?.inPlacement ?? !ranked} size="lg" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[9px] font-black uppercase tracking-[0.22em] text-gold/70">Current Rank</p>
-            <p className="mt-1 truncate text-sm font-black uppercase tracking-[0.1em] text-white">{ranked?.rankName ?? 'Unranked'}</p>
-            <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">
+          <div className="min-w-0 [text-shadow:0_1px_4px_rgba(2,6,18,0.95)]">
+            <p className="truncate text-[9px] font-black uppercase tracking-[0.2em] text-gold/80">Current Rank</p>
+            <p className="mt-1 font-display text-sm font-black uppercase leading-tight tracking-[0.04em] text-white">
+              {ranked?.rankName ?? 'Unranked'}
+            </p>
+            <p className="mt-1 text-[10px] font-bold uppercase leading-tight tracking-[0.08em] text-white/55">
               {ranked
                 ? ranked.inPlacement
                   ? 'Placement in progress'
@@ -223,7 +271,7 @@ function ProfileHero() {
         </div>
 
         {!isOwner && (
-          <div className="flex shrink-0 flex-wrap justify-center gap-2 lg:flex-col lg:pb-1">
+          <div className="flex shrink-0 flex-wrap justify-center gap-2 lg:flex-col">
             {header.relationship === 'blocked_by_viewer' ? (
               <CanvasMenuButton label="Unblock" size="sm" onClick={() => void unblockUser(profile.username)} />
             ) : (
@@ -234,8 +282,10 @@ function ProfileHero() {
         )}
       </div>
 
+      {/* `relative` so it stacks above the banner backdrop rather than
+          disappearing behind it. */}
       {isOwner && imageError && !chooser && (
-        <p className="border-t border-red-300/20 bg-red-500/10 px-4 py-2 text-xs text-red-100 sm:px-5">{imageError}</p>
+        <p className="relative border-t border-red-300/20 bg-red-500/25 px-4 py-2 text-xs text-red-100 sm:px-5">{imageError}</p>
       )}
 
       {isOwner && (
@@ -255,7 +305,7 @@ function ProfileHero() {
             busy={uploadPending === 'avatar'}
             error={imageError}
             onErrorChange={setImageError}
-            onUpload={(blob) => uploadImage('avatar', blob)}
+            onUpload={(blob, transform, source) => uploadImage('avatar', blob, transform, source)}
             onRemove={() => removeImage('avatar')}
           />
           <ProfileImageChooser
@@ -272,7 +322,7 @@ function ProfileHero() {
             busy={uploadPending === 'banner'}
             error={imageError}
             onErrorChange={setImageError}
-            onUpload={(blob) => uploadImage('banner', blob)}
+            onUpload={(blob, transform, source) => uploadImage('banner', blob, transform, source)}
             onRemove={() => removeImage('banner')}
           />
         </>
@@ -287,17 +337,34 @@ function ProfileHero() {
  * owner and visitor branches above would otherwise repeat it, and a size
  * that drifted between the two would misalign the overlap.
  */
-function HeroAvatar({ avatar }: { avatar: ReturnType<typeof resolveProfileAvatar> }) {
+function HeroAvatar({
+  avatar,
+  withEditOverlay = false,
+}: {
+  avatar: ReturnType<typeof resolveProfileAvatar>;
+  withEditOverlay?: boolean;
+}) {
+  // Passed as `overlay` rather than `children` so PlayerAvatar clips it to
+  // whichever silhouette it is drawing — a rectangle over a hexagon is
+  // exactly the mistake that prop exists to prevent.
+  const overlay = withEditOverlay ? (
+    <span className="pointer-events-none absolute inset-0 grid place-items-center bg-black/60 opacity-0 transition-opacity duration-150 group-hover/avatar:opacity-100 group-focus-visible/avatar:opacity-100">
+      <svg viewBox="0 0 24 24" className="h-6 w-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16v4z" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  ) : undefined;
+
   return (
     <>
       <span className="sm:hidden">
-        <PlayerAvatar imageUrl={avatar.imageUrl} catalogAvatarId={avatar.optionId} frameId={avatar.frameId} size={88} />
+        <PlayerAvatar imageUrl={avatar.imageUrl} catalogAvatarId={avatar.optionId} frameId={avatar.frameId} size={88} overlay={overlay} />
       </span>
       <span className="hidden sm:inline lg:hidden">
-        <PlayerAvatar imageUrl={avatar.imageUrl} catalogAvatarId={avatar.optionId} frameId={avatar.frameId} size={104} />
+        <PlayerAvatar imageUrl={avatar.imageUrl} catalogAvatarId={avatar.optionId} frameId={avatar.frameId} size={104} overlay={overlay} />
       </span>
       <span className="hidden lg:inline">
-        <PlayerAvatar imageUrl={avatar.imageUrl} catalogAvatarId={avatar.optionId} frameId={avatar.frameId} size={124} />
+        <PlayerAvatar imageUrl={avatar.imageUrl} catalogAvatarId={avatar.optionId} frameId={avatar.frameId} size={124} overlay={overlay} />
       </span>
     </>
   );
@@ -391,9 +458,12 @@ function ProfileNavigation({
   onChange: (section: ProfileSectionId) => void;
 }) {
   return (
-    <div className="relative w-full min-w-0 max-w-full lg:h-full lg:min-h-0">
+    // `lg:self-start` — the rail sizes to its ten items and stops. Stretched
+    // to the content column's full height it left a tall empty box under the
+    // last item, which read as a panel that had failed to load.
+    <div className="relative w-full min-w-0 max-w-full lg:self-start">
       <nav
-        className="flex w-full min-w-0 gap-1 overflow-x-auto rounded-sm border border-white/10 bg-black/35 p-1 [scrollbar-width:none] lg:h-full lg:flex-col lg:gap-0.5 lg:overflow-x-hidden lg:overflow-y-auto lg:p-2 [&::-webkit-scrollbar]:hidden"
+        className="flex w-full min-w-0 gap-1 overflow-x-auto rounded-sm border border-white/10 bg-black/35 p-1 [scrollbar-width:none] lg:flex-col lg:gap-0.5 lg:overflow-x-hidden lg:p-2 [&::-webkit-scrollbar]:hidden"
         aria-label="Profile sections"
         role="tablist"
       >
@@ -471,7 +541,12 @@ function OverviewSection() {
       <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <MiniList title="Recent Matches" empty="No visible matches yet.">
           {(history?.entries ?? []).slice(0, 4).map((match) => (
-            <ListRow key={match.matchId} left={match.result.toUpperCase()} right={match.opponentName ? `vs ${match.opponentName}` : match.matchType} />
+            <ListRow
+              key={match.matchId}
+              left={match.result.toUpperCase()}
+              leftClassName={matchResultClass(match.result)}
+              right={match.opponentName ? `vs ${match.opponentName}` : match.matchType}
+            />
           ))}
         </MiniList>
         <MiniList title="Featured Milestones" empty="No featured milestones yet.">
@@ -526,9 +601,23 @@ function MatchHistorySection() {
       {history?.entries.length ? (
         <div className="space-y-2">
           {history.entries.map((match) => (
-            <div key={match.matchId} className="min-w-0 rounded-sm border border-white/10 bg-white/[0.03] p-3 transition-colors hover:border-white/20">
+            <div
+              key={match.matchId}
+              className={[
+                'min-w-0 rounded-sm border border-l-2 border-white/10 bg-white/[0.03] p-3 transition-colors hover:border-white/20',
+                // The left edge repeats the result as colour alone, so a long
+                // log can be skimmed without reading every row's first word.
+                match.result === 'win'
+                  ? 'border-l-emerald-400/70 hover:border-l-emerald-400/70'
+                  : match.result === 'loss'
+                    ? 'border-l-red-400/70 hover:border-l-red-400/70'
+                    : 'border-l-white/25 hover:border-l-white/25',
+              ].join(' ')}
+            >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-black uppercase tracking-[0.1em] text-white">{match.result}</p>
+                <p className={['font-display font-black uppercase tracking-[0.1em]', matchResultClass(match.result)].join(' ')}>
+                  {match.result}
+                </p>
                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-white/45">{formatDate(match.endedAt ?? match.startedAt)}</p>
               </div>
               <p className="mt-1 text-sm text-slate-200/70">{match.opponentName ? `Opponent: ${match.opponentName}` : 'Opponent unavailable'}</p>
@@ -880,10 +969,12 @@ function MiniList({ title, empty, children }: { title: string; empty: string; ch
   );
 }
 
-function ListRow({ left, right }: { left: string; right: string }) {
+function ListRow({ left, right, leftClassName }: { left: string; right: string; leftClassName?: string }) {
   return (
     <div className="flex min-w-0 items-center justify-between gap-3 overflow-hidden rounded-sm border border-white/10 bg-white/[0.03] px-3 py-2">
-      <span className="min-w-0 truncate text-sm font-bold text-white">{left}</span>
+      <span className={['min-w-0 truncate text-sm font-black uppercase tracking-[0.08em]', leftClassName ?? 'text-white'].join(' ')}>
+        {left}
+      </span>
       <span className="shrink-0 text-[11px] font-bold uppercase tracking-[0.12em] text-white/40">{right}</span>
     </div>
   );
@@ -914,6 +1005,23 @@ function EmptyState({ title, body }: { title: string; body: string }) {
       <p className="mt-2 max-w-md text-sm leading-6 text-slate-200/55">{body}</p>
     </div>
   );
+}
+
+/**
+ * Result colour, shared by the Overview snapshot and the Voyage Log so the
+ * two can never drift into meaning different things by the same colour.
+ * Draw and unknown stay neutral on purpose — colouring them would imply an
+ * outcome the record does not claim.
+ */
+function matchResultClass(result: string): string {
+  switch (result.toLowerCase()) {
+    case 'win':
+      return 'text-emerald-300';
+    case 'loss':
+      return 'text-red-300';
+    default:
+      return 'text-white/60';
+  }
 }
 
 function formatDate(value: string | null): string {

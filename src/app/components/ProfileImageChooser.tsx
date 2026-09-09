@@ -13,9 +13,11 @@
  * precedence while it exists, so "Remove" is a real, non-destructive undo
  * back to whichever preset the player last chose.
  *
- * The Upload tab hides itself entirely when the backend has no image
- * storage configured — an affordance that can only ever 503 is worse than
- * no affordance.
+ * The Upload tab is ALWAYS shown, even when the backend cannot accept
+ * uploads. Hiding it was worse: a player looking for the feature found no
+ * trace of it and no way to tell whether it existed, was broken, or was
+ * something they had misremembered. It now renders an explanation of what
+ * is missing instead of a button that would 503.
  */
 import { useEffect, useRef, useState } from 'react';
 import { PROFILE_IMAGE_ACCEPT_ATTRIBUTE, PROFILE_IMAGE_SPECS, type ProfileImageKind } from '../../../shared/profileImage';
@@ -25,7 +27,15 @@ import { BannerPicker } from './BannerPicker';
 import { ImageCropModal } from './ImageCropModal';
 import { Modal } from './Modal';
 import { PlayerAvatar } from './PlayerAvatar';
-import { loadImageFromFile, rejectSourceFile, uploadLimitHint } from '../lib/profileImages';
+import {
+  encodeSourceCopy,
+  loadImageFromFile,
+  loadImageFromUrl,
+  rejectSourceFile,
+  uploadLimitHint,
+  type LoadedImage,
+} from '../lib/profileImages';
+import type { ProfileImageTransform } from '../../../shared/profileImage';
 
 type Tab = 'presets' | 'upload';
 
@@ -42,7 +52,8 @@ export interface ProfileImageChooserProps {
   busy: boolean;
   error: string | null;
   onErrorChange: (error: string | null) => void;
-  onUpload: (blob: Blob) => Promise<boolean>;
+  /** `sourceBlob` is null when re-cropping an upload whose original is already stored. */
+  onUpload: (blob: Blob, transform: ProfileImageTransform, sourceBlob: Blob | null) => Promise<boolean>;
   onRemove: () => void | Promise<void>;
 }
 
@@ -75,8 +86,16 @@ export function ProfileImageChooser({
   onRemove,
 }: ProfileImageChooserProps) {
   const [tab, setTab] = useState<Tab>('presets');
-  const [pendingImage, setPendingImage] = useState<HTMLImageElement | null>(null);
+  const [pending, setPending] = useState<LoadedImage | null>(null);
   const [cropOpen, setCropOpen] = useState(false);
+  /**
+   * Distinguishes "cropping a file the player just picked" from "adjusting
+   * the crop of something already uploaded". Only the first has a new
+   * original to store; the second reuses the one on the server, which is
+   * what makes repositioning possible without a re-upload.
+   */
+  const [adjusting, setAdjusting] = useState(false);
+  const [loadingSource, setLoadingSource] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const spec = PROFILE_IMAGE_SPECS[kind];
   const copy = COPY[kind];
@@ -85,11 +104,27 @@ export function ProfileImageChooser({
   // a click for anyone who already uploaded something.
   useEffect(() => {
     if (!open) return;
-    setTab(current && uploadsEnabled ? 'upload' : 'presets');
+    setTab(current ? 'upload' : 'presets');
     onErrorChange(null);
     // onErrorChange is a stable store action; re-running on it would loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, uploadsEnabled]);
+
+  /**
+   * Single owner of the loaded image's object-URL lifetime — see
+   * lib/profileImages.loadImageFromFile. Every path that stops rendering the
+   * crop stage (cancel, success, picking a different file, unmount) goes
+   * through here, so the blob is released exactly once and never while it is
+   * still on screen.
+   */
+  function releasePending() {
+    setPending((current) => {
+      current?.dispose();
+      return null;
+    });
+  }
+
+  useEffect(() => releasePending, []);
 
   async function handleFileChosen(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -104,19 +139,51 @@ export function ProfileImageChooser({
     }
     onErrorChange(null);
     try {
-      const image = await loadImageFromFile(file);
-      setPendingImage(image);
+      const loaded = await loadImageFromFile(file);
+      // Replacing a previous selection must free the old one first.
+      setPending((current) => {
+        current?.dispose();
+        return loaded;
+      });
+      setAdjusting(false);
       setCropOpen(true);
     } catch (cause) {
       onErrorChange(cause instanceof Error ? cause.message : 'That image could not be read.');
     }
   }
 
-  async function handleCropConfirmed(blob: Blob) {
-    const ok = await onUpload(blob);
+  /**
+   * Re-opens the cropper on the ORIGINAL stored behind the current crop,
+   * seeded with the transform the player last saved. Nothing is re-uploaded
+   * as a source on confirm — the server already has it.
+   */
+  async function handleAdjust() {
+    if (!current?.sourceUrl) return;
+    setLoadingSource(true);
+    onErrorChange(null);
+    try {
+      const image = await loadImageFromUrl(current.sourceUrl);
+      setPending((existing) => {
+        existing?.dispose();
+        // Not an object URL, so there is nothing to revoke.
+        return { image, dispose: () => undefined };
+      });
+      setAdjusting(true);
+      setCropOpen(true);
+    } catch (cause) {
+      onErrorChange(cause instanceof Error ? cause.message : 'Could not load the original image.');
+    } finally {
+      setLoadingSource(false);
+    }
+  }
+
+  async function handleCropConfirmed(blob: Blob, transform: ProfileImageTransform) {
+    // Only a freshly picked file carries a new original to keep.
+    const sourceBlob = adjusting || !pending ? null : await encodeSourceCopy(pending.image);
+    const ok = await onUpload(blob, transform, sourceBlob);
     if (ok) {
       setCropOpen(false);
-      setPendingImage(null);
+      releasePending();
       onClose();
     }
   }
@@ -125,12 +192,10 @@ export function ProfileImageChooser({
     <>
       <Modal open={open} onClose={onClose} title={copy.title} maxWidthClassName="max-w-xl">
         <div className="p-4 sm:p-5">
-          {uploadsEnabled && (
-            <div className="mb-4 inline-flex w-full gap-1 border border-white/10 bg-black/30 p-1 sm:w-auto" role="tablist">
-              <TabButton active={tab === 'presets'} label={copy.presetLabel} onClick={() => setTab('presets')} />
-              <TabButton active={tab === 'upload'} label="Upload" onClick={() => setTab('upload')} />
-            </div>
-          )}
+          <div className="mb-4 inline-flex w-full gap-1 border border-white/10 bg-black/30 p-1 sm:w-auto" role="tablist">
+            <TabButton active={tab === 'presets'} label={copy.presetLabel} onClick={() => setTab('presets')} />
+            <TabButton active={tab === 'upload'} label="Upload" onClick={() => setTab('upload')} />
+          </div>
 
           {tab === 'presets' ? (
             <>
@@ -147,6 +212,18 @@ export function ProfileImageChooser({
                 <BannerPicker value={presetValue} onChange={onPresetChange} />
               )}
             </>
+          ) : !uploadsEnabled ? (
+            <div className="border border-white/10 bg-black/25 p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-gold">Uploads Unavailable</p>
+              <p className="mt-2 text-xs leading-5 text-slate-200/65">
+                This server isn't accepting image uploads right now, so only the preset {kind === 'avatar' ? 'portraits' : 'colours'} are
+                available. Everything else on your profile works normally.
+              </p>
+              <p className="mt-3 text-[11px] leading-5 text-white/40">
+                If you run this server: the backend needs the profile-image routes deployed and a{' '}
+                <code className="text-white/60">BLOB_READ_WRITE_TOKEN</code> set. See server/.env.example.
+              </p>
+            </div>
           ) : (
             <div>
               <div className="flex flex-col items-center gap-4 border border-white/10 bg-black/25 p-4 sm:flex-row sm:items-center">
@@ -174,7 +251,11 @@ export function ProfileImageChooser({
                   <p className="text-[11px] font-black uppercase tracking-[0.16em] text-gold">
                     {current ? 'Your upload' : `Upload a ${kind === 'avatar' ? 'photo' : 'banner'}`}
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-slate-200/60">{uploadLimitHint(kind)}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-200/60">
+                    {current && !current.sourceUrl
+                      ? 'This image was saved before repositioning was available — replace it to be able to adjust its position later.'
+                      : uploadLimitHint(kind)}
+                  </p>
                   <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
                     <button
                       type="button"
@@ -184,6 +265,16 @@ export function ProfileImageChooser({
                     >
                       {current ? 'Replace Image' : 'Choose Image'}
                     </button>
+                    {current?.sourceUrl && (
+                      <button
+                        type="button"
+                        disabled={busy || loadingSource}
+                        onClick={() => void handleAdjust()}
+                        className="border border-white/20 bg-white/[0.06] px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/75 transition hover:border-gold/50 hover:text-gold disabled:opacity-45"
+                      >
+                        {loadingSource ? 'Loading...' : 'Adjust Position'}
+                      </button>
+                    )}
                     {current && (
                       <button
                         type="button"
@@ -221,9 +312,10 @@ export function ProfileImageChooser({
         open={cropOpen}
         onClose={() => {
           setCropOpen(false);
-          setPendingImage(null);
+          setAdjusting(false);
+          releasePending();
         }}
-        image={pendingImage}
+        image={pending?.image ?? null}
         title={`Crop ${copy.title}`}
         outputWidth={spec.outputWidth}
         outputHeight={spec.outputHeight}
@@ -231,6 +323,7 @@ export function ProfileImageChooser({
         busy={busy}
         error={error}
         confirmLabel={kind === 'avatar' ? 'Save Photo' : 'Save Banner'}
+        initialTransform={adjusting ? current?.transform ?? null : null}
         onConfirm={handleCropConfirmed}
       />
     </>

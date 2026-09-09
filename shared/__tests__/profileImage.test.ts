@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import {
   PROFILE_IMAGE_SPECS,
   isProfileImageKind,
+  normalizeTransform,
   profileImageAspect,
   readImageHeader,
   validateProfileImageBytes,
@@ -77,18 +78,18 @@ function webpExtended(width: number, height: number): Uint8Array {
 
 describe('readImageHeader', () => {
   it('reads PNG dimensions from IHDR', () => {
-    expect(readImageHeader(png(512, 512))).toEqual({ format: 'png', width: 512, height: 512 });
+    expect(readImageHeader(png(512, 444))).toEqual({ format: 'png', width: 512, height: 444 });
   });
 
   it('reads JPEG dimensions from the first SOF marker, skipping earlier segments', () => {
-    expect(readImageHeader(jpeg(1600, 400))).toEqual({ format: 'jpeg', width: 1600, height: 400 });
+    expect(readImageHeader(jpeg(1800, 300))).toEqual({ format: 'jpeg', width: 1800, height: 300 });
     expect(readImageHeader(jpeg(640, 480, { withPrecedingSegment: false }))).toEqual({ format: 'jpeg', width: 640, height: 480 });
   });
 
   it('reads all three WebP chunk layouts', () => {
-    expect(readImageHeader(webpLossy(512, 512))).toEqual({ format: 'webp', width: 512, height: 512 });
+    expect(readImageHeader(webpLossy(512, 444))).toEqual({ format: 'webp', width: 512, height: 444 });
     expect(readImageHeader(webpLossless(512, 384))).toEqual({ format: 'webp', width: 512, height: 384 });
-    expect(readImageHeader(webpExtended(1600, 400))).toEqual({ format: 'webp', width: 1600, height: 400 });
+    expect(readImageHeader(webpExtended(1800, 300))).toEqual({ format: 'webp', width: 1800, height: 300 });
   });
 
   it('rejects bytes that are not one of the three containers', () => {
@@ -102,16 +103,16 @@ describe('readImageHeader', () => {
   });
 
   it('rejects a truncated header rather than guessing at the missing bytes', () => {
-    expect(readImageHeader(png(512, 512).slice(0, 18))).toBeNull();
-    expect(readImageHeader(webpLossy(512, 512).slice(0, 24))).toBeNull();
+    expect(readImageHeader(png(512, 444).slice(0, 18))).toBeNull();
+    expect(readImageHeader(webpLossy(512, 444).slice(0, 24))).toBeNull();
   });
 });
 
 describe('validateProfileImageBytes', () => {
   it('accepts a cropper-sized avatar and banner', () => {
-    const avatar = validateProfileImageBytes('avatar', webpLossy(512, 512));
+    const avatar = validateProfileImageBytes('avatar', webpLossy(512, 444));
     expect(avatar.ok).toBe(true);
-    const banner = validateProfileImageBytes('banner', webpLossy(1600, 400));
+    const banner = validateProfileImageBytes('banner', webpLossy(1800, 300));
     expect(banner.ok).toBe(true);
   });
 
@@ -134,9 +135,9 @@ describe('validateProfileImageBytes', () => {
   it('rejects dimensions outside the per-kind bounds', () => {
     expect(validateProfileImageBytes('avatar', webpLossy(2048, 2048))).toMatchObject({ ok: false, reason: 'DIMENSIONS_TOO_LARGE' });
     expect(validateProfileImageBytes('avatar', webpLossy(32, 32))).toMatchObject({ ok: false, reason: 'DIMENSIONS_TOO_SMALL' });
-    // A banner-shaped image is too tall for the avatar slot's ceiling? No —
-    // it is the WIDTH that fails there, which is what this asserts.
-    expect(validateProfileImageBytes('avatar', webpLossy(1600, 400))).toMatchObject({ ok: false, reason: 'DIMENSIONS_TOO_LARGE' });
+    // A banner-shaped image in the avatar slot fails on WIDTH, not height —
+    // which is what this asserts.
+    expect(validateProfileImageBytes('avatar', webpLossy(1800, 300))).toMatchObject({ ok: false, reason: 'DIMENSIONS_TOO_LARGE' });
   });
 });
 
@@ -149,7 +150,33 @@ describe('kind helpers', () => {
   });
 
   it('derives the cropper aspect from the output size', () => {
-    expect(profileImageAspect('avatar')).toBe(1);
-    expect(profileImageAspect('banner')).toBe(4);
+    // Avatar is the bounding box of a regular flat-top hexagon (2 : sqrt(3)),
+    // NOT a square — the render-time mask would otherwise discard height the
+    // player had deliberately framed.
+    expect(profileImageAspect('avatar')).toBeCloseTo(2 / Math.sqrt(3), 2);
+    expect(profileImageAspect('banner')).toBe(6);
+  });
+});
+
+describe('normalizeTransform', () => {
+  it('passes a legal transform through unchanged', () => {
+    expect(normalizeTransform({ offsetX: 0.25, offsetY: -0.4, scale: 2.5 })).toEqual({ offsetX: 0.25, offsetY: -0.4, scale: 2.5 });
+  });
+
+  it('accepts the string form the query parameters arrive as', () => {
+    expect(normalizeTransform({ offsetX: '0.5', offsetY: '-0.5', scale: '1.75' })).toEqual({ offsetX: 0.5, offsetY: -0.5, scale: 1.75 });
+  });
+
+  it('clamps rather than rejects, so a bad value degrades to a sane crop', () => {
+    expect(normalizeTransform({ offsetX: 99, offsetY: -99, scale: 1000 })).toEqual({ offsetX: 1, offsetY: -1, scale: 4 });
+    // Below cover would expose empty space inside the frame.
+    expect(normalizeTransform({ scale: 0.1 }).scale).toBe(1);
+  });
+
+  it('falls back to a centred, unzoomed crop for junk input', () => {
+    const identity = { offsetX: 0, offsetY: 0, scale: 1 };
+    expect(normalizeTransform(undefined)).toEqual(identity);
+    expect(normalizeTransform(null)).toEqual(identity);
+    expect(normalizeTransform({ offsetX: 'abc', scale: NaN })).toEqual(identity);
   });
 });
