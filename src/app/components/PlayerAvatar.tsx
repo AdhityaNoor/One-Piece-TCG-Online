@@ -68,7 +68,7 @@ export function PlayerAvatar({
   if (!custom) {
     return (
       <span
-        className={['relative inline-flex shrink-0 items-center justify-center', className ?? ''].join(' ')}
+        className={['relative inline-flex shrink-0 items-center justify-center align-bottom', className ?? ''].join(' ')}
         style={{ width: size, height: size }}
       >
         <img
@@ -85,7 +85,12 @@ export function PlayerAvatar({
 
   return (
     <span
-      className={['relative inline-flex shrink-0', className ?? ''].join(' ')}
+      // `align-bottom` is load-bearing: as an inline-level box this sits on
+      // the parent's text baseline, which reserves descender space BELOW it.
+      // Any parent centring the avatar then centres box+descender and the
+      // avatar lands a few pixels high — measurably 7px vs 14px top/bottom
+      // inside the header plate.
+      className={['relative inline-flex shrink-0 align-bottom', className ?? ''].join(' ')}
       style={{
         width: size,
         height: hexHeight,

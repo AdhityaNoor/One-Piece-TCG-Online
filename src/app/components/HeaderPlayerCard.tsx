@@ -1,6 +1,6 @@
 /**
  * The player's identity cluster at the right edge of the app header:
- * level, photo, name and rank, on one angled plate.
+ * photo, name, rank and level, on one angled plate.
  *
  * This replaces what used to be three separate things sitting side by side —
  * a rank pill, a level pill, and a bare avatar button. Read left to right
@@ -11,8 +11,9 @@
  * under the name instead of a competing box.
  *
  * LEVEL AND RANK ARE STILL SEPARATE PROGRESSIONS (see shared/progression.ts)
- * and are deliberately kept visually distinct within the plate — level in
- * the angled leading edge, rank beneath the name:
+ * and are deliberately kept visually distinct within the plate — the rank
+ * as an icon plus label under the name, the level as a hexagonal badge on
+ * the photo:
  *   - Level = lifetime XP from any mode, monotonic, never resets.
  *   - Rank  = seasonal competitive standing, can demote, resets each season.
  * Neither is derived from the other; a level 40 player can sit in the lowest
@@ -30,6 +31,7 @@ import { useProfileStore } from '../store/profileStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { isBackendConfigured } from '../../multiplayer/net/backendConfig';
 import { levelForXp } from '../../../shared/progression';
+import { HEX_CLIP_PATH } from '../lib/avatarFrames';
 import { PlayerAvatar } from './PlayerAvatar';
 import { RankBadge } from './RankBadge';
 
@@ -39,15 +41,39 @@ import { RankBadge } from './RankBadge';
  * DIRECTION MATTERS and is easy to get backwards: the TOP-left corner is the
  * plate's leftmost point and the BOTTOM-left is inset, so the diagonal falls
  * away to the right as it descends. Inverting it (top inset, bottom flush)
- * makes the plate lean the other way, points the wedge at the nav instead of
- * away from it, and leaves no room at the top for the level to sit in.
+ * makes the plate lean the other way and points the wedge at the nav
+ * instead of away from it.
  *
- * The run is proportional to the plate's height — a chamfer that keeps a
- * fixed pixel run at two different header heights changes angle between
- * breakpoints. 0.57 : 1 matches the reference.
+ * Geometry is DERIVED, not eyeballed. Three constraints fix every number
+ * below, so none of them may be nudged independently:
+ *
+ *  1. The chamfer's angle equals the hexagon's side edge. A regular hexagon's
+ *     edge is exactly 30 degrees from vertical (its run is a quarter of the
+ *     width over half the height, and 0.25 / (sqrt(3)/4) = tan 30), so
+ *     run = plateH * tan(30). Any other run makes the plate's edge and the
+ *     avatar's edge visibly non-parallel.
+ *  2. The plate fills the header: no vertical inset, flush to the right edge
+ *     (the card cancels the header row's horizontal padding with -mr).
+ *  3. The hexagon's clearance is ONE gap — identical above, below, and
+ *     PERPENDICULAR to the diagonal. Solving for that gives
+ *     hexLeft = gap * hypot(run, plateH) / plateH + run / 2.
+ *
+ * Measured at 1280x80: gapTop 12.0, gapBottom 12.0, gapDiagonal 11.8.
  */
-const CHAMFER_RUN = '2.6rem';
-const PLATE_CLIP = `polygon(0 0, 100% 0, 100% 100%, ${CHAMFER_RUN} 100%)`;
+const PLATE_H = 79; // header h-20 (80px, border-box) less its 1px bottom border
+const CHAMFER_RUN_PX = PLATE_H / Math.sqrt(3); // 45.61px — 30deg, matching the hex edge
+const PLATE_CLIP = `polygon(0 0, 100% 0, 100% 100%, ${CHAMFER_RUN_PX.toFixed(2)}px 100%)`;
+
+/** Avatar WIDTH; its height is width * sqrt(3)/2, i.e. 55.4px. */
+const AVATAR_PX = 64;
+
+/**
+ * The hexagon's left offset — constraint 3's solution, 36.42px — is applied
+ * below as the LITERAL class `md:ml-[2.276rem]`, never interpolated from a
+ * constant. Tailwind scans source text for complete class names, so a
+ * template-built `md:ml-[${x}]` is never generated and the hexagon would end
+ * up flush against the diagonal with no offset at all.
+ */
 
 /** The slice of the profile header this block renders. */
 interface Standing {
@@ -113,7 +139,7 @@ export function HeaderPlayerCard({ isActive, onOpen }: HeaderPlayerCardProps) {
       onClick={onOpen}
       aria-label="Your profile"
       aria-current={isActive ? 'page' : undefined}
-      className="group relative z-10 ml-auto flex h-full flex-shrink-0 items-center"
+      className="group relative z-10 -mr-3 ml-auto flex h-full flex-shrink-0 items-center sm:-mr-6"
     >
       {/* Two stacked clipped layers make the 1px outline follow the chamfer:
           the outer one is the border colour, the inner is inset by a pixel
@@ -127,65 +153,89 @@ export function HeaderPlayerCard({ isActive, onOpen }: HeaderPlayerCardProps) {
       <span
         aria-hidden="true"
         className={[
-          'absolute inset-y-1 left-0 right-0 hidden transition-colors duration-200 md:block',
-          isActive ? 'bg-[rgb(var(--op-gold-rgb)/0.55)]' : 'bg-white/15 group-hover:bg-white/30',
+          'absolute inset-y-0 left-0 right-0 hidden transition-colors duration-200 md:block',
+          isActive ? 'bg-[rgb(var(--op-gold-rgb)/0.6)]' : 'bg-white/30 group-hover:bg-white/45',
         ].join(' ')}
         style={{ clipPath: PLATE_CLIP }}
       />
       <span
         aria-hidden="true"
         className={[
-          'absolute inset-y-[5px] left-px right-px hidden transition-colors duration-200 md:block',
+          // Only the diagonal keeps a hairline. Insetting the top, bottom or
+          // right would read as padding — the plate is meant to BE the
+          // header's right end, not a chip floating inside it.
+          'absolute inset-y-0 left-px right-0 hidden transition-colors duration-200 md:block',
           isActive
-            ? 'bg-[linear-gradient(100deg,_rgba(217,164,65,0.22)_0%,_rgba(3,9,24,0.85)_60%)]'
-            : 'bg-[linear-gradient(100deg,_rgba(10,28,66,0.9)_0%,_rgba(3,9,24,0.85)_60%)] group-hover:bg-[linear-gradient(100deg,_rgba(16,40,90,0.95)_0%,_rgba(3,9,24,0.9)_60%)]',
+            ? 'bg-[linear-gradient(100deg,_rgba(60,42,10,0.92)_0%,_rgba(1,4,14,0.9)_70%)]'
+            : 'bg-[linear-gradient(100deg,_rgba(4,10,26,0.92)_0%,_rgba(1,4,14,0.9)_70%)] group-hover:bg-[linear-gradient(100deg,_rgba(10,22,52,0.94)_0%,_rgba(1,4,14,0.9)_70%)]',
         ].join(' ')}
         style={{ clipPath: PLATE_CLIP }}
       />
 
-      <span className="relative flex h-full items-center gap-2 py-1 pl-1 pr-1 md:gap-3.5 md:pl-3 md:pr-5">
-        {/* Level lives INSIDE the chamfered wedge, top-aligned — that wedge
-            is the widest part of the plate at the top, and it is the only
-            place a two-line block fits without stealing width from the
-            name. `self-start` rather than centred for the same reason. */}
-        {level !== null && (
-          <span
-            className="hidden shrink-0 flex-col items-center self-start pt-1.5 leading-none md:flex"
-            title={`Player level ${level} — earned from matches played in any mode`}
-          >
-            <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/50">Lv</span>
-            <span className="mt-0.5 font-display text-lg font-black leading-none text-[rgb(var(--op-gold-rgb))]">{level}</span>
-          </span>
-        )}
-
+      {/* The wedge is left EMPTY on purpose. The level used to sit in it,
+          but the triangle is narrow where the number lands and it read as
+          crowding the avatar's leading vertex no matter where inside the
+          wedge it was placed — the space simply is not wide enough for a
+          glyph at a legible size. The level moved under the name (below);
+          the chamfer stays as pure shape. */}
+      <span className="relative flex h-full items-center gap-3 pl-2 pr-4 md:gap-4 md:pl-0 md:pr-7">
         <span
           className={[
-            'shrink-0 transition-all duration-200',
+            'relative flex shrink-0 transition-all duration-200 md:ml-[2.276rem]',
             isActive ? 'drop-shadow-[0_0_10px_rgba(217,164,65,0.8)]' : 'opacity-95 group-hover:opacity-100',
           ].join(' ')}
         >
           <span className="md:hidden">
             <PlayerAvatar imageUrl={avatarImageUrl} catalogAvatarId={avatarId} frameId={avatarFrameId} size={50} />
           </span>
-          <span className="hidden md:block">
-            <PlayerAvatar imageUrl={avatarImageUrl} catalogAvatarId={avatarId} frameId={avatarFrameId} size={70} />
+          <span className="hidden md:flex">
+            <PlayerAvatar imageUrl={avatarImageUrl} catalogAvatarId={avatarId} frameId={avatarFrameId} size={AVATAR_PX} />
           </span>
+
+          {/* Level as a badge hovering on the photo's lower edge.
+
+              A HEXAGON, not a circle: the frame is a hexagon, and a disc
+              stuck on one reads as a foreign object. Repeating the shape
+              makes the badge look like part of the avatar. It reuses
+              HEX_CLIP_PATH, so if the frame's silhouette ever changes the
+              badge follows it automatically.
+
+              `min-w` plus horizontal padding rather than a fixed size, so a
+              2- or 3-digit level widens the hexagon instead of clipping.
+              Solid gold with a dark numeral, because a gold OUTLINE would
+              sit directly on the frame's own gold ring and the two would
+              read as one smudged edge.
+
+              It deliberately sits OUTSIDE the plate's clipped layers, so it
+              can overhang the ring without being cut. Anchored bottom-centre
+              because the hexagon's bottom edge is flat there; at the
+              lower-LEFT it would cross the plate's diagonal and be clipped
+              by it. */}
+          {level !== null && (
+            <span
+              className="pointer-events-none absolute bottom-[-7px] left-1/2 flex h-[19px] min-w-[23px] -translate-x-1/2 items-center justify-center px-1 font-display text-[11px] font-black leading-none text-[#050d1e]"
+              style={{ clipPath: HEX_CLIP_PATH, background: 'rgb(var(--op-gold-rgb))' }}
+              title={`Player level ${level} — earned from matches played in any mode`}
+            >
+              {level}
+            </span>
+          )}
         </span>
 
         <span className="hidden min-w-0 flex-col items-start justify-center text-left md:flex">
           <span
             className={[
-              'max-w-[10rem] truncate font-display text-base font-black uppercase tracking-[0.08em] transition-colors lg:max-w-[14rem] lg:text-lg',
+              'max-w-[10rem] truncate font-display text-base font-black uppercase leading-none tracking-[0.08em] transition-colors lg:max-w-[14rem] lg:text-lg',
               isActive ? 'text-[rgb(var(--op-gold-rgb))]' : 'text-white',
             ].join(' ')}
           >
             {username}
           </span>
-          {/* Rank is a caption under the name, per the reference: the badge
-              is the icon, the rank name is the label. Placement is spelled
-              out rather than shown as a rank name, because there isn't one
-              yet. */}
-          <span className="mt-1 flex min-w-0 items-center gap-1.5">
+
+          {/* Rank is a caption under the name: the badge is the icon, the
+              rank name is the label. Placement is spelled out rather than
+              shown as a rank name, because there isn't one yet. */}
+          <span className="mt-1.5 flex min-w-0 items-center gap-2">
             <RankBadge
               rank={ranked?.rank}
               division={ranked?.division}
@@ -193,7 +243,7 @@ export function HeaderPlayerCard({ isActive, onOpen }: HeaderPlayerCardProps) {
               size="sm"
             />
             <span
-              className="min-w-0 truncate text-[11px] font-bold uppercase tracking-[0.12em] text-white/55"
+              className="min-w-0 truncate text-[12px] font-bold uppercase leading-none tracking-[0.1em] text-white/60"
               title={
                 ranked
                   ? `${ranked.rankName}${ranked.division ? ` ${ranked.division}` : ''} — ${ranked.rankedPoints} RP`
